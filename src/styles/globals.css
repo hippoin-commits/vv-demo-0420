@@ -1,0 +1,899 @@
+/* Inter 由 index.html 的 <link> 引入，避免在 index.css 中 tailwind/tw-animate 之后再 @import 字体导致 PostCSS 报错 */
+
+@custom-variant dark (&:is(.dark *));
+
+/* =========================================
+   CSS Variables
+   ========================================= */
+@layer base {
+  :root {
+    
+/*  =========================================
+    Custom Values
+    =========================================  */
+    
+    --vv-cui-button-primary-bg: var(--blue-11);
+    --vv-cui-button-primary-border-color: var(--blue-alpha-8);
+    --vv-ai-frame-background: rgba(242, 244, 248, 0.88);
+    --vv-cui-button-secondary-bg: var(--black-alpha-9);
+    --vv-cui-button-secondary-border-color: var(--black-alpha-8);
+    --vv-cui-font-size-base: 15px;
+    --cui-padding-max: max(0px, calc(50% - 512px));
+
+    
+/*  =========================================
+    Typography
+    =========================================  */
+    --font-family-text: "PingFang SC", "Avenir", sans-serif;
+    --font-family-data: "DIN", sans-serif;
+    
+    --font-weight-thin: 100;
+    --font-weight-extra-light: 200;
+    --font-weight-light: 300;
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-semi-bold: 600;
+    --font-weight-bold: 700;
+    --font-weight-extra-bold: 800;
+    --font-weight-heavy: 900;
+    
+    --font-size-xxs: 10px;
+    --font-size-xs: 12px;
+    --font-size-base: 14px;
+    --font-size-md: 16px;
+    --font-size-lg: 18px;
+    --font-size-xl: 20px;
+    --font-size-2xl: 24px;
+    --font-size-3xl: 28px;
+    --font-size-4xl: 32px;
+    --font-size-5xl: 36px;
+    --font-size-6xl: 40px;
+
+    --letter-spacing-xs: -0.4px;
+    --letter-spacing-base: 0px;
+    --letter-spacing-sm: 0.6px;
+    --letter-spacing-md: 1.2px;
+    --letter-spacing-lg: 2px;
+    --letter-spacing-xl: 3px;
+
+    --line-height-4xs: 14px;
+    --line-height-3xs: 16px;
+    --line-height-2xs: 18px;
+    --line-height-xs: 20px;
+    --line-height-sm: 22px;
+    --line-height-md: 24px;
+    --line-height-base: 26px;
+    --line-height-lg: 28px;
+    --line-height-xl: 32px;
+    --line-height-2xl: 36px;
+    --line-height-3xl: 42px;
+    --line-height-4xl: 48px;
+    --line-height-5xl: 68px;
+
+    
+/*  =========================================
+    Sizes & Spacing
+    =========================================  */
+    --space-0: 0px;
+    --space-50: 2px;
+    --space-100: 4px;
+    --space-150: 6px;
+    --space-200: 8px;
+    --space-250: 10px;
+    --space-300: 12px;
+    --space-350: 14px;
+    --space-400: 16px;
+    --space-500: 20px;
+    --space-600: 24px;
+    /** 邮箱等：相邻不同消息/卡片块之间的纵向间距（非「同组」内 6px） */
+    --space-625: 25px;
+    --space-700: 28px;
+    --space-800: 32px;
+    --space-900: 36px;
+    --space-1000: 40px;
+    --space-1200: 48px;
+    --space-1600: 64px;
+    --space-4000: 160px;
+
+    --stroke-xs: 0.5px;
+    --stroke-sm: 1px;
+    --stroke-md: 1.5px;
+    --stroke-lg: 2px;
+    --stroke-xl: 3px;
+    --stroke-2xl: 4px;
+
+    --icon-4xs: 8px;
+    --icon-3xs: 10px;
+    --icon-2xs: 12px;
+    --icon-xs: 14px;
+    --icon-sm: 16px;
+    --icon-md: 20px;
+    --icon-lg: 24px;
+    --icon-xl: 28px;
+    --icon-2xl: 32px;
+    --icon-3xl: 36px;
+    --icon-4xl: 40px;
+    --icon-5xl: 48px;
+    --icon-6xl: 64px;
+    --icon-7xl: 80px;
+
+    
+/*  =========================================
+    Radius
+    =========================================  */
+    --radius-0: 0px;
+    --radius-50: 2px;
+    --radius-100: 4px;
+    --radius-150: 6px;
+    --radius-200: 8px;
+    --radius-250: 10px;
+    --radius-300: 12px;
+    --radius-400: 16px;
+    --radius-500: 20px;
+    --radius-600: 24px;
+    --radius-800: 32px;
+    --radius-900: 36px;
+    --radius-1000: 40px;
+    --radius-1200: 48px;
+    --radius-1600: 64px;
+    --radius-full: 9999px;
+    
+/*  =========================================
+    Blur
+    =========================================  */
+    --blur-0: 0px;
+    --blur-50: 2px;
+    --blur-100: 4px;
+    --blur-200: 8px;
+    --blur-300: 12px;
+    --blur-400: 16px;
+    --blur-500: 20px;
+    --blur-600: 24px;
+    --blur-800: 32px;
+    --blur-900: 36px;
+    --blur-1000: 40px;
+    --blur-1200: 48px;
+    --blur-1600: 64px;
+
+    
+/*  =========================================
+    Shadow
+    =========================================  */
+    --shadow-2xs: 0px 2px 8px rgba(22, 24, 30, 0.06);
+    --shadow-xs: 0px 4px 16px rgba(22, 24, 30, 0.06);
+    --shadow-sm: 0px 8px 24px rgba(22, 24, 30, 0.08);
+    --shadow-md: 0px 12px 32px rgba(22, 24, 30,0.1);
+    --shadow-lg: 0px 16px 40px rgba(22, 24, 30,0.15);
+    --shadow-xl: 0px 20px 48px rgba(22, 24, 30,0.2);
+
+/*  =========================================
+    Breakpoints
+    =========================================  */
+    --screen-xs: 320px;
+    --screen-sm: 402px;
+    --screen-md: 768px;
+    --screen-lg: 1024px;
+    --screen-xl: 1280px;
+    --screen-2xl: 1600px;
+    --screen-3xl: 1920px;
+
+    --screen-sm-min: 320;
+    --screen-sm-max: 767;
+    --screen-md-min: 768;
+    --screen-md-max: 1023;
+    --screen-lg-min: 1024;
+    --screen-lg-max: 1279;
+    --screen-xl-min: 1280px;
+    --screen-xl-max: 1599px;
+
+/*  =========================================
+    Components
+    =========================================  */
+    /* --Scrollbar-- */
+    --scrollbar-width: var(--space-150); /* 滚动条宽度：控制滚动条的粗细 */
+    --scrollbar-track: transparent; /* 滚动条轨道颜色：背景通常设为透明以实现“不占位”视觉感 */
+    --scrollbar-thumb: var(--black-alpha-11); /* 滚动条滑块颜色：默认状态下的颜色 */
+    --scrollbar-thumb-hover: var(--black-alpha-8); /* 滚动条滑块颜色：鼠标悬停状态下的颜色 */
+    
+/*  =========================================
+    Colors Mode: Light (Default)
+    =========================================  */
+    --white: rgb(255, 255, 255);
+    --black: rgb(0, 0, 0);
+    --white-to-dark: rgb(255, 255, 255);
+    --dark-to-white: rgb(0, 0, 0);
+    --opacity-0: rgba(255, 255, 255, 0);
+
+    --neutral-1: rgb(14, 14, 14);
+    --neutral-2: rgb(26, 26, 26);
+    --neutral-3: rgb(51, 51, 51);
+    --neutral-4: rgb(102, 102, 102);
+    --neutral-5: rgb(153, 153, 153);
+    --neutral-6: rgb(187, 187, 187);
+    --neutral-7: rgb(204, 203, 203);
+    --neutral-8: rgb(221, 221, 221);
+    --neutral-9: rgb(238, 238, 238);
+    --neutral-10: rgb(242, 242, 242);
+    --neutral-11: rgb(245, 245, 245);
+    --neutral-12: rgb(250, 250, 250);
+
+    --gray-1: rgb(20, 24, 36);
+    --gray-2: rgb(42, 47, 60);
+    --gray-3: rgb(73, 83, 108);
+    --gray-4: rgb(102, 111, 134);
+    --gray-5: rgb(133, 139, 155);
+    --gray-6: rgb(167, 173, 188);
+    --gray-7: rgb(201, 206, 217);
+    --gray-8: rgb(220, 224, 232);
+    --gray-9: rgb(232, 234, 239);
+    --gray-10: rgb(242, 243, 244);
+    --gray-11: rgb(246, 247, 248);
+    --gray-12: rgb(250, 251, 252);
+
+    --red-1: rgb(66, 1, 1);
+    --red-2: rgb(92, 8, 8);
+    --red-3: rgb(122, 16, 16);
+    --red-4: rgb(156, 28, 28);
+    --red-5: rgb(195, 45, 45);
+    --red-6: rgb(224, 68, 68);
+    --red-7: rgb(245, 86, 86);
+    --red-8: rgb(255, 140, 140);
+    --red-9: rgb(255, 179, 179);
+    --red-10: rgb(255, 214, 214);
+    --red-11: rgb(255, 234, 234);
+    --red-12: rgb(255, 245, 245);
+
+    --blue-1: rgb(3, 29, 76);
+    --blue-2: rgb(10, 39, 119);
+    --blue-3: rgb(29, 71, 168);
+    --blue-4: rgb(56, 100, 202);
+    --blue-5: rgb(68, 121, 212);
+    --blue-6: rgb(85, 144, 246);
+    --blue-7: rgb(124, 172, 255);
+    --blue-8: rgb(163, 202, 255);
+    --blue-9: rgb(194, 218, 255);
+    --blue-10: rgb(226, 237, 255);
+    --blue-11: rgb(239, 245, 255);
+    --blue-12: rgb(247, 250, 255);
+
+    --orange-1: rgb(78, 45, 5);
+    --orange-2: rgb(111, 66, 9);
+    --orange-3: rgb(151, 91, 14);
+    --orange-4: rgb(181, 101, 9);
+    --orange-5: rgb(219, 125, 12);
+    --orange-6: rgb(244, 143, 16);
+    --orange-7: rgb(255, 162, 45);
+    --orange-8: rgb(255, 192, 120);
+    --orange-9: rgb(255, 218, 171);
+    --orange-10: rgb(255, 232, 203);
+    --orange-11: rgb(255, 245, 232);
+    --orange-12: rgb(255, 252, 245);
+
+    --green-1: rgb(4, 45, 32);
+    --green-2: rgb(7, 70, 51);
+    --green-3: rgb(6, 94, 68);
+    --green-4: rgb(8, 117, 86);
+    --green-5: rgb(15, 140, 104);
+    --green-6: rgb(37, 178, 135);
+    --green-7: rgb(68, 198, 157);
+    --green-8: rgb(107, 218, 177);
+    --green-9: rgb(155, 229, 201);
+    --green-10: rgb(201, 240, 226);
+    --green-11: rgb(233, 248, 243);
+    --green-12: rgb(242, 252, 249);
+
+    --yellow-1: rgb(52, 45, 4);
+    --yellow-2: rgb(96, 83, 8);
+    --yellow-3: rgb(122, 105, 8);
+    --yellow-4: rgb(148, 129, 9);
+    --yellow-5: rgb(175, 150, 5);
+    --yellow-6: rgb(200, 162, 11);
+    --yellow-7: rgb(223, 189, 0);
+    --yellow-8: rgb(237, 207, 37);
+    --yellow-9: rgb(244, 211, 82);
+    --yellow-10: rgb(244, 221, 132);
+    --yellow-11: rgb(247, 237, 188);
+    --yellow-12: rgb(250, 244, 227);
+
+    --black-alpha-0: rgb(22, 24, 30);
+    --black-alpha-1: rgba(22, 24, 30, 0.92);
+    --black-alpha-2: rgba(22, 24, 30, 0.80);
+    --black-alpha-3: rgba(22, 24, 30, 0.65);
+    --black-alpha-4: rgba(22, 24, 30, 0.50);
+    --black-alpha-5: rgba(22, 24, 30, 0.40);
+    --black-alpha-6: rgba(22, 24, 30, 0.30);
+    --black-alpha-7: rgba(22, 24, 30, 0.20);
+    --black-alpha-8: rgba(22, 24, 30, 0.10);
+    --black-alpha-9: rgba(22, 24, 30, 0.08);
+    --black-alpha-10: rgba(22, 24, 30, 0.06);
+    --black-alpha-11: rgba(22, 24, 30, 0.04);
+    --black-alpha-12: rgba(22, 24, 30, 0.02);
+
+    --white-alpha-0: rgb(255, 255, 255);
+    --white-alpha-1: rgba(255, 255, 255, 0.96);
+    --white-alpha-2: rgba(255, 255, 255, 0.88);
+    --white-alpha-3: rgba(255, 255, 255, 0.75);
+    --white-alpha-4: rgba(255, 255, 255, 0.60);
+    --white-alpha-5: rgba(255, 255, 255, 0.50);
+    --white-alpha-6: rgba(255, 255, 255, 0.40);
+    --white-alpha-7: rgba(255, 255, 255, 0.30);
+    --white-alpha-8: rgba(255, 255, 255, 0.20);
+    --white-alpha-9: rgba(255, 255, 255, 0.15);
+    --white-alpha-10: rgba(255, 255, 255, 0.10);
+    --white-alpha-11: rgba(255, 255, 255, 0.05);
+    --white-alpha-12: rgba(255, 255, 255, 0.02);
+
+    --blue-alpha-1: rgba(0, 33, 96, 0.98);
+    --blue-alpha-2: rgba(2, 65, 185, 0.95);
+    --blue-alpha-3: rgba(25, 101, 233, 0.90);
+    --blue-alpha-4: rgb(85, 144, 246);
+    --blue-alpha-5: rgba(85, 144, 246, 0.80);
+    --blue-alpha-6: rgba(85, 144, 246, 0.65);
+    --blue-alpha-7: rgba(85, 144, 246, 0.50);
+    --blue-alpha-8: rgba(85, 144, 246, 0.40);
+    --blue-alpha-9: rgba(85, 144, 246, 0.30);
+    --blue-alpha-10: rgba(85, 144, 246, 0.20);
+    --blue-alpha-11: rgba(85, 144, 246, 0.10);
+    --blue-alpha-12: rgba(85, 144, 246, 0.05);
+
+    --orange-alpha-1: rgba(63, 35, 1, 0.98);
+    --orange-alpha-2: rgba(99, 58, 5, 0.95);
+    --orange-alpha-3: rgba(151, 91, 14, 0.90);
+    --orange-alpha-4: rgb(244, 143, 16);
+    --orange-alpha-5: rgba(244, 143, 16, 0.80);
+    --orange-alpha-6: rgba(244, 143, 16, 0.65);
+    --orange-alpha-7: rgba(244, 143, 16, 0.50);
+    --orange-alpha-8: rgba(244, 143, 16, 0.40);
+    --orange-alpha-9: rgba(244, 143, 16, 0.30);
+    --orange-alpha-10: rgba(244, 143, 16, 0.20);
+    --orange-alpha-11: rgba(244, 143, 16, 0.10);
+    --orange-alpha-12: rgba(244, 143, 16, 0.05);
+
+    --red-alpha-1: rgba(53, 1, 1, 0.98);
+    --red-alpha-2: rgba(105, 10, 10, 0.95);
+    --red-alpha-3: rgba(156, 28, 28, 0.90);
+    --red-alpha-4: rgb(224, 68, 68);
+    --red-alpha-5: rgba(224, 68, 68, 0.80);
+    --red-alpha-6: rgba(224, 68, 68, 0.65);
+    --red-alpha-7: rgba(224, 68, 68, 0.50);
+    --red-alpha-8: rgba(224, 68, 68, 0.40);
+    --red-alpha-9: rgba(224, 68, 68, 0.30);
+    --red-alpha-10: rgba(224, 68, 68, 0.20);
+    --red-alpha-11: rgba(224, 68, 68, 0.10);
+    --red-alpha-12: rgba(224, 68, 68, 0.05);
+
+    --green-alpha-1: rgba(4, 45, 32, 0.98);
+    --green-alpha-2: rgba(6, 94, 68, 0.95);
+    --green-alpha-3: rgba(8, 117, 86, 0.90);
+    --green-alpha-4: rgb(38, 179, 136);
+    --green-alpha-5: rgba(38, 179, 136, 0.80);
+    --green-alpha-6: rgba(38, 179, 136, 0.65);
+    --green-alpha-7: rgba(38, 179, 136, 0.50);
+    --green-alpha-8: rgba(38, 179, 136, 0.40);
+    --green-alpha-9: rgba(38, 179, 136, 0.30);
+    --green-alpha-10: rgba(38, 179, 136, 0.20);
+    --green-alpha-11: rgba(38, 179, 136, 0.10);
+    --green-alpha-12: rgba(38, 179, 136, 0.05);
+
+    --yellow-alpha-1: rgba(52, 45, 5, 0.98);
+    --yellow-alpha-2: rgba(97, 84, 9, 0.95);
+    --yellow-alpha-3: rgba(148, 130, 9, 0.90);
+    --yellow-alpha-4: rgb(201, 163, 11);
+    --yellow-alpha-5: rgba(201, 163, 11, 0.80);
+    --yellow-alpha-6: rgba(201, 163, 11, 0.65);
+    --yellow-alpha-7: rgba(201, 163, 11, 0.50);
+    --yellow-alpha-8: rgba(201, 163, 11, 0.40);
+    --yellow-alpha-9: rgba(201, 163, 11, 0.30);
+    --yellow-alpha-10: rgba(201, 163, 11, 0.20);
+    --yellow-alpha-11: rgba(201, 163, 11, 0.10);
+    --yellow-alpha-12: rgba(201, 163, 11, 0.05);
+
+    /** 标签 · 品牌色：前景 #FFA22D（与 `--orange-7` 一致），背景为品牌色 8% 叠色 */
+    --tag-brand-fg: var(--orange-7);
+    --tag-brand-bg: rgba(255, 162, 45, 0.08);
+  }
+  
+
+  .dark {
+ /* =========================================
+    Colors Mode: Dark
+    ========================================= */
+    --white: rgb(255, 255, 255);
+    --black: rgb(0, 0, 0);
+    --white-to-dark: rgb(0, 0, 0);
+    --dark-to-white: rgb(255, 255, 255);
+    --opacity-0: rgba(0, 0, 0, 0);
+
+    --neutral-1: rgb(239, 239, 239);
+    --neutral-2: rgb(234, 234, 234);
+    --neutral-3: rgb(204, 203, 203);
+    --neutral-4: rgb(180, 180, 180);
+    --neutral-5: rgb(110, 110, 110);
+    --neutral-6: rgb(96, 96, 96);
+    --neutral-7: rgb(72, 72, 72);
+    --neutral-8: rgb(61, 61, 61);
+    --neutral-9: rgb(42, 42, 42);
+    --neutral-10: rgb(34, 34, 34);
+    --neutral-11: rgb(25, 25, 25);
+    --neutral-12: rgb(17, 17, 17);
+
+    --gray-1: rgb(237, 241, 247);
+    --gray-2: rgb(215, 221, 228);
+    --gray-3: rgb(193, 201, 208);
+    --gray-4: rgb(174, 180, 188);
+    --gray-5: rgb(154, 160, 167);
+    --gray-6: rgb(135, 140, 146);
+    --gray-7: rgb(109, 114, 119);
+    --gray-8: rgb(75, 79, 83);
+    --gray-9: rgb(51, 55, 58);
+    --gray-10: rgb(38, 40, 44);
+    --gray-11: rgb(27, 29, 32);
+    --gray-12: rgb(19, 21, 24);
+
+    --red-1: rgb(255, 242, 242);
+    --red-2: rgb(255, 224, 224);
+    --red-3: rgb(255, 194, 194);
+    --red-4: rgb(255, 158, 158);
+    --red-5: rgb(236, 73, 73);
+    --red-6: rgb(198, 44, 44);
+    --red-7: rgb(161, 37, 37);
+    --red-8: rgb(135, 26, 26);
+    --red-9: rgb(94, 17, 17);
+    --red-10: rgb(61, 10, 10);
+    --red-11: rgb(36, 6, 6);
+    --red-12: rgb(20, 4, 4);
+
+    --blue-1: rgb(240, 246, 255);
+    --blue-2: rgb(221, 232, 255);
+    --blue-3: rgb(196, 216, 255);
+    --blue-4: rgb(158, 192, 255);
+    --blue-5: rgb(112, 163, 250);
+    --blue-6: rgb(67, 129, 235);
+    --blue-7: rgb(50, 108, 208);
+    --blue-8: rgb(41, 85, 192);
+    --blue-9: rgb(36, 74, 162);
+    --blue-10: rgb(24, 55, 122);
+    --blue-11: rgb(13, 37, 87);
+    --blue-12: rgb(4, 10, 22);
+
+    --orange-1: rgb(255, 251, 242);
+    --orange-2: rgb(255, 237, 215);
+    --orange-3: rgb(255, 226, 191);
+    --orange-4: rgb(255, 209, 154);
+    --orange-5: rgb(253, 191, 114);
+    --orange-6: rgb(245, 170, 79);
+    --orange-7: rgb(239, 154, 46);
+    --orange-8: rgb(203, 125, 34);
+    --orange-9: rgb(159, 94, 17);
+    --orange-10: rgb(120, 74, 18);
+    --orange-11: rgb(84, 52, 13);
+    --orange-12: rgb(26, 15, 2);
+
+    --green-1: rgb(240, 251, 247);
+    --green-2: rgb(210, 242, 232);
+    --green-3: rgb(173, 231, 214);
+    --green-4: rgb(110, 209, 169);
+    --green-5: rgb(78, 199, 162);
+    --green-6: rgb(23, 164, 121);
+    --green-7: rgb(19, 126, 96);
+    --green-8: rgb(25, 114, 90);
+    --green-9: rgb(23, 84, 67);
+    --green-10: rgb(17, 62, 49);
+    --green-11: rgb(9, 36, 28);
+    --green-12: rgb(2, 15, 11);
+
+    --yellow-1: rgb(250, 244, 228);
+    --yellow-2: rgb(248, 238, 189);
+    --yellow-3: rgb(244, 221, 132);
+    --yellow-4: rgb(244, 211, 82);
+    --yellow-5: rgb(237, 207, 37);
+    --yellow-6: rgb(223, 189, 0);
+    --yellow-7: rgb(201, 163, 11);
+    --yellow-8: rgb(175, 150, 5);
+    --yellow-9: rgb(148, 130, 9);
+    --yellow-10: rgb(122, 105, 8);
+    --yellow-11: rgb(96, 83, 8);
+    --yellow-12: rgb(52, 45, 5);
+
+    --black-alpha-0: rgb(255, 255, 255);
+    --black-alpha-1: rgba(255, 255, 255, 0.96);
+    --black-alpha-2: rgba(255, 255, 255, 0.88);
+    --black-alpha-3: rgba(255, 255, 255, 0.75);
+    --black-alpha-4: rgba(255, 255, 255, 0.60);
+    --black-alpha-5: rgba(255, 255, 255, 0.50);
+    --black-alpha-6: rgba(255, 255, 255, 0.40);
+    --black-alpha-7: rgba(255, 255, 255, 0.30);
+    --black-alpha-8: rgba(255, 255, 255, 0.20);
+    --black-alpha-9: rgba(255, 255, 255, 0.15);
+    --black-alpha-10: rgba(255, 255, 255, 0.10);
+    --black-alpha-11: rgba(255, 255, 255, 0.05);
+    --black-alpha-12: rgba(255, 255, 255, 0.02);
+
+    --white-alpha-0: rgb(22, 24, 30);
+    --white-alpha-1: rgba(22, 24, 30, 0.92);
+    --white-alpha-2: rgba(22, 24, 30, 0.80);
+    --white-alpha-3: rgba(22, 24, 30, 0.65);
+    --white-alpha-4: rgba(22, 24, 30, 0.50);
+    --white-alpha-5: rgba(22, 24, 30, 0.40);
+    --white-alpha-6: rgba(22, 24, 30, 0.30);
+    --white-alpha-7: rgba(22, 24, 30, 0.20);
+    --white-alpha-8: rgba(22, 24, 30, 0.10);
+    --white-alpha-9: rgba(22, 24, 30, 0.08);
+    --white-alpha-10: rgba(22, 24, 30, 0.06);
+    --white-alpha-11: rgba(22, 24, 30, 0.04);
+    --white-alpha-12: rgba(22, 24, 30, 0.02);
+
+    --blue-alpha-1: rgb(234, 242, 255);
+    --blue-alpha-2: rgb(199, 219, 255);
+    --blue-alpha-3: rgb(136, 180, 255);
+    --blue-alpha-4: rgb(85, 144, 246);
+    --blue-alpha-5: rgba(85, 144, 246, 0.85);
+    --blue-alpha-6: rgba(85, 144, 246, 0.70);
+    --blue-alpha-7: rgba(85, 144, 246, 0.55);
+    --blue-alpha-8: rgba(85, 144, 246, 0.45);
+    --blue-alpha-9: rgba(85, 144, 246, 0.35);
+    --blue-alpha-10: rgba(85, 144, 246, 0.25);
+    --blue-alpha-11: rgba(85, 144, 246, 0.15);
+    --blue-alpha-12: rgba(85, 144, 246, 0.10);
+
+    --orange-alpha-1: rgb(255, 251, 242);
+    --orange-alpha-2: rgb(255, 226, 191);
+    --orange-alpha-3: rgb(254, 191, 114);
+    --orange-alpha-4: rgb(244, 143, 16);
+    --orange-alpha-5: rgba(244, 143, 16, 0.85);
+    --orange-alpha-6: rgba(244, 143, 16, 0.70);
+    --orange-alpha-7: rgba(244, 143, 16, 0.55);
+    --orange-alpha-8: rgba(244, 143, 16, 0.45);
+    --orange-alpha-9: rgba(244, 143, 16, 0.35);
+    --orange-alpha-10: rgba(244, 143, 16, 0.25);
+    --orange-alpha-11: rgba(244, 143, 16, 0.15);
+    --orange-alpha-12: rgba(244, 143, 16, 0.10);
+
+    --red-alpha-1: rgb(255, 245, 245);
+    --red-alpha-2: rgb(255, 214, 214);
+    --red-alpha-3: rgb(255, 140, 140);
+    --red-alpha-4: rgb(224, 68, 68);
+    --red-alpha-5: rgba(224, 68, 68, 0.85);
+    --red-alpha-6: rgba(224, 68, 68, 0.70);
+    --red-alpha-7: rgba(224, 68, 68, 0.55);
+    --red-alpha-8: rgba(224, 68, 68, 0.45);
+    --red-alpha-9: rgba(224, 68, 68, 0.35);
+    --red-alpha-10: rgba(224, 68, 68, 0.25);
+    --red-alpha-11: rgba(224, 68, 68, 0.15);
+    --red-alpha-12: rgba(224, 68, 68, 0.10);
+
+    --green-alpha-1: rgb(242, 252, 249);
+    --green-alpha-2: rgb(201, 240, 226);
+    --green-alpha-3: rgb(107, 218, 177);
+    --green-alpha-4: rgb(38, 179, 136);
+    --green-alpha-5: rgba(38, 179, 136, 0.85);
+    --green-alpha-6: rgba(38, 179, 136, 0.70);
+    --green-alpha-7: rgba(38, 179, 136, 0.55);
+    --green-alpha-8: rgba(38, 179, 136, 0.45);
+    --green-alpha-9: rgba(38, 179, 136, 0.35);
+    --green-alpha-10: rgba(38, 179, 136, 0.25);
+    --green-alpha-11: rgba(38, 179, 136, 0.15);
+    --green-alpha-12: rgba(38, 179, 136, 0.10);
+
+    --yellow-alpha-1: rgb(250, 244, 228);
+    --yellow-alpha-2: rgb(244, 221, 132);
+    --yellow-alpha-3: rgb(237, 207, 37);
+    --yellow-alpha-4: rgb(201, 163, 11);
+    --yellow-alpha-5: rgba(201, 163, 11, 0.85);
+    --yellow-alpha-6: rgba(201, 163, 11, 0.70);
+    --yellow-alpha-7: rgba(201, 163, 11, 0.55);
+    --yellow-alpha-8: rgba(201, 163, 11, 0.45);
+    --yellow-alpha-9: rgba(201, 163, 11, 0.35);
+    --yellow-alpha-10: rgba(201, 163, 11, 0.25);
+    --yellow-alpha-11: rgba(201, 163, 11, 0.15);
+    --yellow-alpha-12: rgba(201, 163, 11, 0.10);
+
+    /** 暗色下仍使用品牌 #FFA22D，避免与语义 `--orange-7` 漂移 */
+    --tag-brand-fg: rgb(255, 162, 45);
+    --tag-brand-bg: rgba(255, 162, 45, 0.08);
+  }
+}
+
+/* =========================================
+   Tailwind v4 Integration - Theme Definition
+   ========================================= */
+@theme {
+  /* --Base Colors-- */
+  --color-primary: var(--blue-6);
+  --color-primary-hover: var(--blue-7);
+  --color-primary-active: var(--blue-5);
+  --color-primary-disabled: var(--blue-9);
+  --color-primary-selected: var(--blue-8);
+  --color-primary-foreground: var(--white);
+  
+  /* The default background color for the application. */
+  --color-bg: var(--white-to-dark);
+  --color-bg-secondary: var(--gray-12);
+  --color-bg-tertiary: var(--gray-11);
+  
+  /* The default color for elements or text that appears on top of the background. */
+  --color-text: var(--gray-2);
+  --color-text-secondary: var(--gray-4);
+  --color-text-tertiary: var(--gray-6);
+  --color-text-muted: var(--gray-7);
+  
+  --color-white: var(--white);
+  --color-black: var(--black);
+  --color-disabled: var(--gray-8);
+  
+  --color-border: var(--black-alpha-9);
+  --color-border-divider: var(--black-alpha-10);
+  
+  --color-overlay: var(--black-alpha-4);
+  --color-overlay-light: var(--black-alpha-7);
+
+  /* --State Colors-- */
+  --color-info: var(--blue-6);
+  --color-info-hover: var(--blue-7);
+  --color-info-active: var(--blue-5);
+  --color-info-disabled: var(--blue-9);
+  --color-info-selected: var(--blue-8);
+  --color-info-foreground: var(--white);
+
+  --color-warning: var(--orange-6);
+  --color-warning-hover: var(--orange-7);
+  --color-warning-active: var(--orange-5);
+  --color-warning-disabled: var(--orange-9);
+  --color-warning-selected: var(--orange-8);
+  --color-warning-foreground: var(--white);
+
+  --color-success: var(--green-6);
+  --color-success-hover: var(--green-7);
+  --color-success-active: var(--green-5);
+  --color-success-disabled: var(--green-9);
+  --color-success-selected: var(--green-8);
+  --color-success-foreground: var(--white);
+
+  --color-error: var(--red-6);
+  --color-error-hover: var(--red-7);
+  --color-error-active: var(--red-5);
+  --color-error-disabled: var(--red-9);
+  --color-error-selected: var(--red-8);
+  --color-error-foreground: var(--white);
+
+  /* --Custom-- */
+  --color-cui-bg: var(--blue-12);
+  --radius-cui-input: var(--radius-full);
+  
+  /* Card specific colors */
+  --color-card: var(--white-to-dark);
+  --color-card-foreground: var(--gray-2);
+  
+  /* Input specific colors */
+  --color-input-background: var(--white-to-dark);
+  --color-input-placeholder: var(--gray-7);
+  --color-ring: var(--blue-6);
+  
+  /* Foreground */
+  --color-foreground: var(--gray-2);
+  --color-muted-foreground: var(--gray-5);
+  
+  /* Destructive */
+  --color-destructive: var(--red-6);
+  --color-destructive-foreground: var(--white);
+
+  /* Radius */
+  --radius-xs: var(--radius-50);
+  --radius-sm: var(--radius-100);
+  --radius-base: var(--radius-200);
+  --radius-lg: var(--radius-300);
+  --radius-xl: var(--radius-400);
+  --radius-button: var(--radius-full);
+  --radius-card: var(--radius-300);
+  --radius-input:var(--radius-150);
+  
+  /* Shadow*/
+  --shadow-elevation-sm: var(--shadow-xs);
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  
+  /* =========================================
+     Legacy Compatibility Layer
+     Ensures existing components using old class names continue to work
+     ========================================= */
+  
+  /* Background compatibility */
+  --color-background: var(--white-to-dark);
+  --color-secondary: var(--black-alpha-11);
+  --color-secondary-foreground: var(--gray-2);
+  --color-muted: var(--blue-alpha-11);
+  --color-accent: var(--blue-6);
+  --color-accent-foreground: var(--white);
+  --color-destructive-foreground: var(--white);
+  --color-input: var(--white-to-dark);
+  
+  /* Popover compatibility */
+  --color-popover: var(--white-to-dark);
+  --color-popover-foreground: var(--gray-2);
+  
+  /* Sidebar compatibility */
+  --color-sidebar: var(--color-bg);
+  --color-sidebar-foreground: var(--gray-1);
+  --color-sidebar-primary: var(--blue-6);
+  --color-sidebar-primary-foreground: var(--white);
+  --color-sidebar-accent: var(--black-alpha-10);
+  --color-sidebar-accent-foreground: var(--gray-2);
+  --color-sidebar-border: var(--black-alpha-9);
+  --color-sidebar-ring: var(--blue-6);
+  
+  /* Chart colors */
+  --color-chart-1: var(--blue-6);
+  --color-chart-2: var(--green-7);
+  --color-chart-3: var(--orange-7);
+  --color-chart-4: var(--red-7);
+  --color-chart-5: var(--blue-7);
+}
+
+/* =========================================
+   Base Styles
+   ========================================= */
+@layer base {
+  * {
+    @apply border-border;
+    outline-color: var(--color-ring);
+    outline-offset: 2px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+
+  /* Webkit 浏览器支持（Chrome, Edge, Safari） */
+  *::-webkit-scrollbar {
+    width: var(--scrollbar-width);
+    height: var(--scrollbar-width);
+  }
+
+  *::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: var(--radius-full);
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+  }
+
+  body {
+    @apply bg-bg text-text;
+    font-family: 'PingFang SC', 'Avenir', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  }
+
+  /*
+   * 可点击区域默认手型光标（避免各处漏写 cursor-pointer）
+   * 禁用态统一为 not-allowed
+   */
+  button:not(:disabled):not([disabled]),
+  [role="button"]:not([aria-disabled="true"]),
+  a[href],
+  summary,
+  label[for],
+  select:not(:disabled):not([disabled]),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  input[type="file"],
+  [role="tab"],
+  [role="menuitem"],
+  [role="menuitemcheckbox"],
+  [role="menuitemradio"],
+  [role="option"],
+  [role="link"] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  button[aria-disabled="true"],
+  select:disabled,
+  input:disabled,
+  textarea:disabled,
+  [role="button"][aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+
+  /* Radix 等：未挂原生 disabled 但标记 data-disabled */
+  button[data-disabled],
+  [role="button"][data-disabled] {
+    cursor: not-allowed;
+  }
+
+  /* 全屏蒙层（抽屉/弹层点击关闭） */
+  div[role="presentation"].fixed {
+    cursor: pointer;
+  }
+}
+
+/**
+ * Base typography. This is not applied to elements which have an ancestor with a Tailwind text class.
+ */
+@layer base {
+  :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) {
+    h1 {
+      font-size: var(--font-size-2xl);
+      font-weight: var(--font-weight-regular);
+      line-height: 1.5;
+      font-family: 'PingFang SC', 'Avenir', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    h2 {
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-regular);
+      line-height: 1.5;
+      font-family: 'PingFang SC', 'Avenir', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    h3 {
+      font-size: var(--font-size-md);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+      font-family: 'PingFang SC', 'Avenir', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    h4 {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+      font-family: 'PingFang SC', 'Avenir', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    p {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-regular);
+      line-height: 1.5;
+      font-family: 'PingFang SC', 'Avenir', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    label {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-regular);
+      line-height: 1.5;
+      font-family: 'PingFang SC', 'Avenir', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    button {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+      font-family: 'PingFang SC', 'Avenir', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    input {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-regular);
+      line-height: 1.5;
+      font-family: 'PingFang SC', 'Avenir', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+  }
+}
+
+html {
+  font-size: var(--font-size-base);
+}
+
+/* =========================================
+   Scrollbar Utilities
+   ========================================= */
+
+/* 当鼠标进入容器时，滑块颜色加深 */
+.container-hover-scrollbar:hover {
+  --scrollbar-thumb: var(--black-alpha-8);
+}
+
+.dark .container-hover-scrollbar:hover {
+  --scrollbar-thumb: var(--white-alpha-8);
+}
+
+/* 隐藏滚动条直到容器被 Hover (实现真正的隐藏/显示) */
+.hide-scrollbar-until-hover {
+  --scrollbar-width: 0px;
+}
+
+.hide-scrollbar-until-hover:hover {
+  --scrollbar-width: 6px;
+}

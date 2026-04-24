@@ -1,0 +1,30 @@
+---
+description: 基于 vv-design-system 的 UI 实现约束：先查来源组件、统一 design token、禁止硬编码。在改样式、做页面、新增/扩展组件、对齐设计稿时生效。
+globs: "**/*.{tsx,jsx,vue,css}"
+alwaysApply: false
+---
+
+# VV Design System（项目规则）
+
+本仓库中设计系统资产路径如下（与独立 `vv-design-system/` 包等价，但位于 `src/` 下）：
+
+- 组件来源：`src/components/ui`
+- 规范：`guidelines/Guidelines.md`
+- Token 与主题：`src/styles/globals.css`
+
+## 来源与文档
+
+- 业务侧 CUI / 聊天卡片等扩展组件在 `src/components/main-ai/`、`src/components/chat/` 等目录；实现通用控件时仍以 `src/components/ui` 为准。
+
+## 必须遵守
+
+1. **先查来源组件**：实现按钮、表单、卡片、弹层、表格等 UI 前，必须在 `src/components/ui` 中检索是否已有可复用组件；能复用则复用或按需扩展 props / variant。
+2. **无来源时先对齐**：若没有对应来源组件，必须先向用户确认「新建组件」还是「映射到已有最接近组件」，并说明推荐方案，未确认前不擅自新增平行实现。
+3. **改公共组件须说明影响面**：若修改 `src/components/ui` 内已有组件的默认样式或结构，须明确列出会影响的业务调用方再动手。
+4. **变量优先级**：语义层（`@theme` 生成的类，如 `bg-primary`、`text-text`）优先；其次 `var(--*)` 引用 `globals.css`；禁止跳过语义层直接滥用 scale 色（如无缘无故用 `bg-[var(--blue-6)]` 代替品牌语义色）。
+5. **禁止硬编码样式**：禁止裸 `#hex`、`rgb()`、Tailwind 默认调色板（如 `bg-blue-500`）、以及脱离 token 的任意像素（如随意 `p-4`、`rounded-[8px]`）；间距、圆角、字号须映射到现有 `--space-*`、`--radius-*`、`--font-size-*` 等变量体系。
+6. **一致性**：同一类控件在同一页面内须使用相同的 token 与组合方式，避免混用多种写法导致视觉不一致。
+
+## 交付说明
+
+与 Agent Skill `vv-design-system-implementation` 配合使用：本文件为**硬约束**，Skill 为**步骤与输出格式**；二者冲突时以 `guidelines/Guidelines.md` 与 `src/styles/globals.css` 为准。
