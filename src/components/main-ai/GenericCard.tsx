@@ -7,6 +7,8 @@ export interface GenericCardProps extends React.HTMLAttributes<HTMLDivElement> {
   title: string;
   /** 与 `title` 同一行、标题右侧的补充文案（如「（已更新）」） */
   titleSuffix?: React.ReactNode;
+  /** 标题行下方、副标题上方的自定义区域（如演示用组织切换条） */
+  titleBelowAccessory?: React.ReactNode;
   /** 第二行小字（如任务名称）；子卡片不展示任务编码 */
   subtitle?: string;
   children?: React.ReactNode;
@@ -59,6 +61,7 @@ export function OperationSourceBar({ label }: { label: string }) {
 export function GenericCard({
   title,
   titleSuffix,
+  titleBelowAccessory,
   subtitle,
   children,
   className = "",
@@ -84,6 +87,9 @@ export function GenericCard({
               </span>
             ) : null}
           </h3>
+          {titleBelowAccessory ? (
+            <div className="w-full min-w-0">{titleBelowAccessory}</div>
+          ) : null}
           {subtitle ? (
             <p className="m-0 min-w-0 truncate text-[length:var(--font-size-xs)] text-text-tertiary" title={subtitle}>
               {subtitle}

@@ -17,6 +17,8 @@ export const DEMO_HOME_PRIMARY_NAV_ENTRIES: readonly DemoHomeNavEntry[] = [
   { label: "0421-新用户-受邀加入组织", path: "/main-ai-0421-new-user-invited-org" },
   { label: "0421-新用户-受邀加入教育空间-学生", path: "/main-ai-0421-new-user-invited-edu-student" },
   { label: "0422-日程-抽屉交互细节演示", path: "/main-ai-0422-schedule-drawer-demo" },
+  { label: "0424-权限编辑卡片方案", path: "/main-ai-0424-permission-edit-card" },
+  { label: "0425-案例-组织管理+权限申请", path: "/main-ai-0425-organization-management" },
 ] as const;
 
 /** 首页「页面归档」列表 */

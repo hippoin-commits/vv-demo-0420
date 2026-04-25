@@ -15,6 +15,7 @@ export function MainAI0421InteractionRulesPage() {
       alwaysShowIndependentWindow
       noEduSpace0421ChatToolbar
       demoInstructionShell
+      organizationManagement0425Demo
     />
   );
 }

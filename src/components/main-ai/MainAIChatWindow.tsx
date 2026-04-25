@@ -69,6 +69,7 @@ import { AppIcon } from './AppIcon';
 import { ChatNavBar, type EducationSpaceNode } from "../chat/ChatNavBar"
 import { AssistantChatBubble, ChatWelcome } from "../chat/ChatWelcome"
 import { ChatScrollToBottomFab } from "../chat/ChatScrollToBottomFab"
+import { computeNewRoundSlotHeightPx } from "../chat/newRoundSlotHeight"
 import { NewRoundSlotShell } from "../chat/NewRoundSlotShell"
 import { PinnedTaskCard } from "../chat/PinnedTaskCard"
 import { TaskDetailDrawer } from "../chat/TaskDetailDrawer"
@@ -134,6 +135,7 @@ import { MailChatLayer } from "./email/MailChatLayer"
 import type { MailDemoScenarioId } from "./MailDemoScenarioDropdown"
 import { parseGenericCardPayloadJson } from "./chatCardPayloadSafety"
 import {
+  INVITE0421_NO_ORG_DOCK_APP_IDS_ORDERED,
   INVITE0421_PERSONAL_APP_IDS,
   INVITE0421_WORKBENCH_APP_IDS,
 } from "../../constants/invite0421Workbench"
@@ -158,6 +160,7 @@ import {
   INTERACTION_RULES_NATURAL_DIALOG_DEMO_BOT_REPLY,
   INTERACTION_RULES_NATURAL_DIALOG_DEMO_PROMPT,
 } from "../../constants/interactionRulesNaturalDialogDemo"
+import { INTERACTION_RULES_BUSINESS_CARD_COMMAND_DEMO_PROMPT } from "../../constants/interactionRulesBusinessCardCommandDemo"
 import {
   INVITE0421_EDU_INVITE_FLOW_INITIAL,
   Invite0421EduStudentInviteFlowBody,
@@ -165,6 +168,21 @@ import {
 } from "../invite-0421/Invite0421EduStudentInviteFlowBody"
 import { Invite0421MainAiDockWelcome } from "../invite-0421/Invite0421MainAiDockWelcome"
 import type { VVAppShellShortcutId } from "../vv-app-shell/VVAppShell"
+import {
+  PERMISSION_EDIT_CARD_0424_MARKER,
+  PERMISSION_EDIT_CARD_0424_DEFAULT_INPUT_PROMPT,
+  PERMISSION_DETAIL_CARD_0424_MARKER_PREFIX,
+  PERMISSION_EDIT_CARD_0424_USER_TRIGGER,
+  type PermissionEditDetailPayload0424,
+} from "../../constants/permissionEditCard0424"
+import { PermissionEditCard0424, PermissionDetailCard0424 } from "./permission-edit-0424/PermissionEditCard0424"
+import {
+  ORGANIZATION_MANAGEMENT_0425_DEFAULT_INPUT_PROMPT,
+  ORGANIZATION_MANAGEMENT_0425_MARKER,
+  ORGANIZATION_MANAGEMENT_0425_USER_TRIGGER,
+} from "../../constants/organizationManagement0425"
+import { OrganizationManagementCard0425 } from "./organization-management-0425/OrganizationManagementCard0425"
+import { InteractionRulesOrgSelectBar } from "./InteractionRulesOrgSelectBar"
 
 import aiModelIcon from "../../assets/f165fadc65db69eb9ce3d5feeb2f6b4dc2638bd6.png";
 import educationIcon from "../../assets/8449365f45bb140bf269f6769f74387249864ed8.png";
@@ -335,6 +353,30 @@ const MAIL_APP_DOCK_ITEM: AppItem = {
   order: 0,
 };
 
+/** 0421 无组织壳：文档 pill（与 `INITIAL_APPS` 分离，不入 localStorage 默认序列） */
+const DOCS_APP_DOCK_ITEM: AppItem = {
+  id: "docs",
+  name: "文档",
+  icon: {
+    imageSrc: courseIcon,
+    iconType: "docs",
+  },
+  order: 0,
+};
+
+function resolveDockAppItem(id: string, apps: AppItem[]): AppItem | undefined {
+  if (id === "mail") return MAIL_APP_DOCK_ITEM
+  if (id === "docs") return DOCS_APP_DOCK_ITEM
+  return apps.find((a) => a.id === id) ?? INITIAL_APPS.find((a) => a.id === id)
+}
+
+/** 0421 无组织：主底栏与抽屉「已添加」共用此 7 项顺序 */
+function buildInvite0421NoOrgDockApps(apps: AppItem[]): AppItem[] {
+  return INVITE0421_NO_ORG_DOCK_APP_IDS_ORDERED.map((id) => resolveDockAppItem(id, apps)).filter(
+    (x): x is AppItem => x != null,
+  )
+}
+
 /** 从代码中的 INITIAL_APPS 合并图标 URL，避免 localStorage 中 imageSrc 丢失或旧版 figma 路径失效 */
 function hydrateAppIcons(apps: AppItem[]): AppItem[] {
   const byId = new Map(INITIAL_APPS.map((a) => [a.id, a.icon.imageSrc]));
@@ -446,6 +488,22 @@ interface MainAIChatWindowProps {
    * 交互规范文档页：递增时在主 AI 输入框预填自然语言演示句，并在用户下一次主 AI 发送（非结构化指令）后追加一条演示用文本回复。
    */
   interactionRulesNaturalDialogDemoNonce?: number
+  /**
+   * 交互规范文档页：递增时在主 AI 输入框预填「业务指令」演示句；用户下一次主 AI 发送后追加一条交互式通用卡片（演示）。
+   */
+  interactionRulesBusinessCardDemoNonce?: number
+  /**
+   * 交互规范文档「3.2」：递增时在主 AI 插入 0425 组织管理卡，并在卡外展示与顶栏一致的组织切换条（无创建/加入）。
+   */
+  interactionRulesMainAiOrgDemoNonce?: number
+  /** 「交互规范文档 - 持续更新中」页：为 true 时启用文档页专用新一轮槽位高度策略（见 `armNewRoundForUserSend`） */
+  demoInstructionShell?: boolean
+  /** 0424-权限编辑卡片方案：主 AI 输入含触发词后出现权限编辑 CUI 卡片（演示） */
+  permissionEditCard0424Demo?: boolean
+  /** 0425-案例-组织管理+权限申请：主 AI / 组织应用输入含触发词后出现组织管理 CUI 卡片（演示） */
+  organizationManagement0425Demo?: boolean
+  /** 0425 页面右上角指令集：递增时将组织管理指令填入当前输入框 */
+  organizationManagement0425CommandNonce?: number
 }
 
 function taskEntryIsMailDockFamily(
@@ -659,7 +717,10 @@ function messageContentIsInChatSurfaceCard(content: string): boolean {
     content.startsWith(MAIL_READ_IN_CHAT_MARKER) ||
     content.startsWith(MAIL_SIGNATURE_EDITOR_MARKER) ||
     content.startsWith(MAIL_TENANT_PICK_FOR_ADMIN_MARKER) ||
-    content.startsWith(MAIL_MAIL_ADMIN_PANEL_MARKER)
+    content.startsWith(MAIL_MAIL_ADMIN_PANEL_MARKER) ||
+    content === PERMISSION_EDIT_CARD_0424_MARKER ||
+    content.startsWith(PERMISSION_DETAIL_CARD_0424_MARKER_PREFIX) ||
+    content === ORGANIZATION_MANAGEMENT_0425_MARKER
   );
 }
 
@@ -1020,6 +1081,58 @@ const FAMILY_EDUCATION_APPS = [
     id: 'family_reward',
     name: '奖励管理',
     imageSrc: financeIcon,
+    menu: [],
+    directClick: true,
+  },
+]
+
+const ORGANIZATION_0425_APPS: SecondaryAppButtonApp[] = [
+  {
+    id: "org_structure",
+    name: "组织架构",
+    imageSrc: organizationIcon,
+    menu: [],
+    directClick: true,
+  },
+  {
+    id: "org_management",
+    name: "组织管理",
+    imageSrc: orgIcon,
+    menu: [],
+    directClick: true,
+  },
+  {
+    id: "post_management",
+    name: "岗位管理",
+    imageSrc: employeeIcon,
+    menu: [],
+    directClick: true,
+  },
+  {
+    id: "rank_management",
+    name: "职级管理",
+    imageSrc: recruitmentIcon,
+    menu: [],
+    directClick: true,
+  },
+  {
+    id: "position_management",
+    name: "职位管理",
+    imageSrc: profileIcon,
+    menu: [],
+    directClick: true,
+  },
+  {
+    id: "salary_quantile",
+    name: "薪酬分位",
+    imageSrc: salaryIcon,
+    menu: [],
+    directClick: true,
+  },
+  {
+    id: "org_settings",
+    name: "组织设置",
+    imageSrc: companyIcon,
     menu: [],
     directClick: true,
   },
@@ -1478,6 +1591,12 @@ export function MainAIChatWindow({
   onInvite0421DemoApprovalInDemoNavVisibleChange,
   schedule0422DrawerDemo = false,
   interactionRulesNaturalDialogDemoNonce = 0,
+  interactionRulesBusinessCardDemoNonce = 0,
+  interactionRulesMainAiOrgDemoNonce = 0,
+  demoInstructionShell = false,
+  permissionEditCard0424Demo = false,
+  organizationManagement0425Demo = false,
+  organizationManagement0425CommandNonce = 0,
 }: MainAIChatWindowProps) {
   const invite0421DockFlow = invite0421NewUserFlow || invite0421EduStudentFlow;
   /** 避免 `tryEnterWorkbenchApp` 随 `activeApp` 变引用后，effect 误重复打开教育应用（如底栏「返回」后主 AI 立刻被拉回教育） */
@@ -1496,6 +1615,21 @@ export function MainAIChatWindow({
   const [inputValue, setInputValue] = React.useState("")
   /** 交互规范文档「自然语言对话」：预填后下一次主 AI 非结构化发送时追加演示回复 */
   const interactionRulesNaturalDialogArmRef = React.useRef(false)
+  /** 交互规范文档「业务指令→卡片」：预填后下一次主 AI 发送时追加演示用通用卡片 */
+  const interactionRulesBusinessCardDemoArmRef = React.useRef(false)
+  /** 0424 权限编辑演示：主 AI 输入框仅自动预填一次，避免与子应用往返时反复覆盖用户输入 */
+  const permission0424InputPrefilledRef = React.useRef(false)
+  /** 0425 组织管理演示：主 AI 输入框仅自动预填一次 */
+  const organization0425InputPrefilledRef = React.useRef(false)
+  const [interactionRulesOrgCardMessageId, setInteractionRulesOrgCardMessageId] = React.useState<
+    string | null
+  >(null)
+  const [interactionRulesOrgCardResetKey, setInteractionRulesOrgCardResetKey] = React.useState(0)
+  const lastInteractionRulesOrgSwitcherDemoNonceRef = React.useRef(0)
+  const [interactionRulesOrg0425SwitcherPlacement, setInteractionRulesOrg0425SwitcherPlacement] = React.useState<
+    "external" | "internal"
+  >("external");
+  const interactionRulesOrg0425PendingScheme2Ref = React.useRef(false);
   const scrollRef = React.useRef<HTMLDivElement>(null)
   /** 当前列表最后一条消息的外层容器，用于新卡片打开时滚至卡片顶部对齐视口 */
   const latestMessageRowRef = React.useRef<HTMLDivElement>(null)
@@ -1815,9 +1949,14 @@ export function MainAIChatWindow({
       }
       const c = chatContainerRef.current
       const pin = pinnedTaskStickyRef.current
+      /** 对话滚动区可视高度（≈ 顶栏 ChatNavBar 之下到底栏输入/快捷栏之上的区域） */
       const fullH = c?.clientHeight ?? 480
       const pinH = showPinnedExplorer && pin ? pin.offsetHeight : 0
-      const slotHeightPx = Math.max(200, fullH - pinH)
+      const slotHeightPx = computeNewRoundSlotHeightPx({
+        chatClientHeight: fullH,
+        pinOverlayHeight: pinH,
+        demoInstructionShell,
+      })
       sameRoundScrollSuppressRef.current = {
         minOrdinal: startMessageIndex,
         armedActiveApp,
@@ -1830,7 +1969,7 @@ export function MainAIChatWindow({
         armedIs0419Explore: is0419Explore,
       })
     },
-    [is0419Explore, activeApp]
+    [is0419Explore, activeApp, demoInstructionShell]
   )
 
   // Floating Windows State
@@ -1925,24 +2064,40 @@ export function MainAIChatWindow({
     return next;
   }, [apps, taskEntryVariant]);
 
-  /** 0421 新用户：无组织时主底栏仅展示「教育」；有组织后恢复完整列表 */
+  /** 0421 新用户：无组织时主底栏固定 7 项顺序（教育→待办→日程→会议→邮箱→文档→微盘）；有组织后恢复完整列表 */
   const appsForMainAIDockPills = React.useMemo(() => {
     if (!invite0421DockFlow || hasOrganization) return apps;
-    return apps.filter(
-      (a) =>
-        a.id === "education" ||
-        INVITE0421_PERSONAL_APP_IDS.has(a.id) ||
-        (taskEntryIsMailDockFamily(taskEntryVariant) && a.id === "mail"),
-    );
-  }, [apps, invite0421DockFlow, hasOrganization, taskEntryVariant]);
+    return buildInvite0421NoOrgDockApps(apps);
+  }, [apps, invite0421DockFlow, hasOrganization]);
 
-  /** 0421：已添加 = 非工作台应用；未添加 = 工作台应用（与 Guidelines 分类一致） */
+  /** 0421：已添加 = 无组织 7 项（顺序同上）；未添加 = 工作台应用（与 Guidelines 分类一致） */
   const invite0421AllAppsSplit = React.useMemo(() => {
     if (!invite0421DockFlow || hasOrganization) return null;
-    const added = appsForAllAppsDrawer.filter((a) => !INVITE0421_WORKBENCH_APP_IDS.has(a.id));
+    const added = buildInvite0421NoOrgDockApps(apps);
     const unadded = appsForAllAppsDrawer.filter((a) => INVITE0421_WORKBENCH_APP_IDS.has(a.id));
     return { added, unadded };
-  }, [invite0421DockFlow, hasOrganization, appsForAllAppsDrawer]);
+  }, [invite0421DockFlow, hasOrganization, apps, appsForAllAppsDrawer]);
+
+  /** 0421 无组织壳：日程（非 0422 抽屉演示）与待办/会议/文档/微盘等占位应用底栏（返回 + 全部应用） */
+  const invite0421NoOrgShellPersonalDock = React.useMemo(
+    () =>
+      Boolean(
+        invite0421DockFlow &&
+          !(hasOrganization || workbenchOrgGateReleased) &&
+          (activeApp === "todo" ||
+            activeApp === "meeting" ||
+            activeApp === "disk" ||
+            activeApp === "docs" ||
+            (activeApp === "schedule" && !schedule0422DrawerDemo)),
+      ),
+    [
+      invite0421DockFlow,
+      hasOrganization,
+      workbenchOrgGateReleased,
+      activeApp,
+      schedule0422DrawerDemo,
+    ],
+  );
 
   const handleAllAppsDrawerReorder = (reorderedApps: AppItem[]) => {
     handleReorder(reorderedApps.filter((a) => a.id !== "mail"));
@@ -1964,6 +2119,25 @@ export function MainAIChatWindow({
     if (activeApp === "schedule") {
       const a = apps.find((x) => x.id === "schedule") ?? INITIAL_APPS.find((x) => x.id === "schedule");
       return a ? { name: a.name, imageSrc: a.icon.imageSrc ?? "" } : undefined;
+    }
+    if (activeApp === "organization") {
+      const a = apps.find((x) => x.id === "organization") ?? INITIAL_APPS.find((x) => x.id === "organization");
+      return a ? { name: a.name, imageSrc: a.icon.imageSrc ?? "" } : undefined;
+    }
+    if (activeApp === "todo") {
+      const a = apps.find((x) => x.id === "todo") ?? INITIAL_APPS.find((x) => x.id === "todo");
+      return a ? { name: a.name, imageSrc: a.icon.imageSrc ?? "" } : undefined;
+    }
+    if (activeApp === "meeting") {
+      const a = apps.find((x) => x.id === "meeting") ?? INITIAL_APPS.find((x) => x.id === "meeting");
+      return a ? { name: a.name, imageSrc: a.icon.imageSrc ?? "" } : undefined;
+    }
+    if (activeApp === "disk") {
+      const a = apps.find((x) => x.id === "disk") ?? INITIAL_APPS.find((x) => x.id === "disk");
+      return a ? { name: a.name, imageSrc: a.icon.imageSrc ?? "" } : undefined;
+    }
+    if (activeApp === "docs") {
+      return { name: DOCS_APP_DOCK_ITEM.name, imageSrc: DOCS_APP_DOCK_ITEM.icon.imageSrc ?? "" };
     }
     return undefined;
   }, [activeApp, apps]);
@@ -2059,18 +2233,27 @@ export function MainAIChatWindow({
    *   - 0419 语境下各子能力共用 `messages.length`；非 0419 按 surface 取对应列表长度。
    *   - **不要** 用于原位置卡片形态切换 / 数据更新（见 `scrollInPlaceMutatedCardToTop`）。
    */
-  type NewRoundChatSurface = "main" | "education" | "task" | "mail" | "schedule";
+  type NewRoundChatSurface =
+    | "main"
+    | "education"
+    | "task"
+    | "mail"
+    | "schedule"
+    | "todo"
+    | "meeting"
+    | "disk"
+    | "docs";
   const beginNewUserChatRound = React.useCallback(
     (surface: NewRoundChatSurface) => {
       const prior = is0419Explore
         ? messages.length
-        : surface === "main" || surface === "schedule"
-          ? messages.length
-          : surface === "education"
-            ? educationMessages.length
-            : surface === "task"
-              ? taskMessages.length
-              : mailMessages.length;
+        : surface === "education"
+          ? educationMessages.length
+          : surface === "task"
+            ? taskMessages.length
+            : surface === "mail"
+              ? mailMessages.length
+              : messages.length;
       armNewRoundForUserSend(surface === "main" ? null : surface, prior);
     },
     [is0419Explore, messages, educationMessages, taskMessages, mailMessages, armNewRoundForUserSend]
@@ -2159,6 +2342,19 @@ export function MainAIChatWindow({
     ];
   }, [schedule0422DrawerDemo, invite0421JoinedOrganizationList]);
 
+  const interactionRulesOrgNavDemo = React.useMemo(
+    () => demoInstructionShell && organizationManagement0425Demo,
+    [demoInstructionShell, organizationManagement0425Demo],
+  );
+
+  React.useEffect(() => {
+    if (!interactionRulesOrgNavDemo || hasOrganization) return;
+    setCurrentOrg((prev) => {
+      if (prev !== NO_ORG_MESSAGE_SCOPE) return prev;
+      return schedule0422NavOrganizations[0]?.id ?? "xiaoce";
+    });
+  }, [interactionRulesOrgNavDemo, hasOrganization, schedule0422NavOrganizations]);
+
   React.useEffect(() => {
     if (!schedule0422DrawerDemo) return;
     setCurrentOrg(SCHEDULE_0422_ORG_ID_MING_SHI);
@@ -2198,11 +2394,22 @@ export function MainAIChatWindow({
   const tryEnterWorkbenchApp = React.useCallback(
     (appId: string) => {
       const dockMail = taskEntryIsMailDockFamily(taskEntryVariant) && appId === "mail";
+      const invite0421NoOrgPersonalSurface =
+        invite0421DockFlow &&
+        !(hasOrganization || workbenchOrgGateReleased) &&
+        (appId === "schedule" ||
+          appId === "todo" ||
+          appId === "meeting" ||
+          appId === "disk" ||
+          appId === "docs" ||
+          appId === "mail");
       const opensPrimarySurface =
         appId === "education" ||
         appId === "task" ||
         dockMail ||
-        (schedule0422DrawerDemo && appId === "schedule");
+        (organizationManagement0425Demo && appId === "organization") ||
+        (schedule0422DrawerDemo && appId === "schedule") ||
+        invite0421NoOrgPersonalSurface;
 
       const invite0421NoOrgBlock =
         invite0421DockFlow &&
@@ -2262,6 +2469,7 @@ export function MainAIChatWindow({
       simpleOrgOnboarding0421,
       invite0421DockFlow,
       taskEntryVariant,
+      organizationManagement0425Demo,
       schedule0422DrawerDemo,
       beginNewUserChatRound,
       conversation.user.id,
@@ -2616,6 +2824,10 @@ export function MainAIChatWindow({
     newRoundScrollAppliedRef.current = false;
     sameRoundScrollSuppressRef.current = null;
     setInvite0421EmployeeAwaitingDemoApproval(false);
+    setInteractionRulesOrgCardMessageId(null);
+    setInteractionRulesOrgCardResetKey(0);
+    setInteractionRulesOrg0425SwitcherPlacement("external");
+    interactionRulesOrg0425PendingScheme2Ref.current = false;
   }, [conversation.id, invite0421DockFlow, is0419Explore]);
 
   /**
@@ -2810,17 +3022,144 @@ export function MainAIChatWindow({
     if (!interactionRulesNaturalDialogDemoNonce) return
     setInputValue(INTERACTION_RULES_NATURAL_DIALOG_DEMO_PROMPT)
     interactionRulesNaturalDialogArmRef.current = true
+    interactionRulesBusinessCardDemoArmRef.current = false
     const id = requestAnimationFrame(() => {
       document.getElementById("main-ai-composer-input")?.focus()
     })
     return () => cancelAnimationFrame(id)
   }, [interactionRulesNaturalDialogDemoNonce])
 
+  React.useEffect(() => {
+    if (!interactionRulesBusinessCardDemoNonce) return
+    setInputValue(INTERACTION_RULES_BUSINESS_CARD_COMMAND_DEMO_PROMPT)
+    interactionRulesBusinessCardDemoArmRef.current = true
+    interactionRulesNaturalDialogArmRef.current = false
+    const id = requestAnimationFrame(() => {
+      document.getElementById("main-ai-composer-input")?.focus()
+    })
+    return () => cancelAnimationFrame(id)
+  }, [interactionRulesBusinessCardDemoNonce])
+
+  React.useEffect(() => {
+    if (!permissionEditCard0424Demo) {
+      permission0424InputPrefilledRef.current = false
+      return
+    }
+    if (activeApp !== null) return
+    if (permission0424InputPrefilledRef.current) return
+    permission0424InputPrefilledRef.current = true
+    setInputValue(PERMISSION_EDIT_CARD_0424_DEFAULT_INPUT_PROMPT)
+    const id = requestAnimationFrame(() => {
+      document.getElementById("main-ai-composer-input")?.focus()
+    })
+    return () => cancelAnimationFrame(id)
+  }, [permissionEditCard0424Demo, activeApp])
+
+  React.useEffect(() => {
+    if (!organizationManagement0425Demo) {
+      organization0425InputPrefilledRef.current = false
+      return
+    }
+    if (activeApp !== null) return
+    if (organization0425InputPrefilledRef.current) return
+    organization0425InputPrefilledRef.current = true
+    setInputValue(ORGANIZATION_MANAGEMENT_0425_DEFAULT_INPUT_PROMPT)
+    const id = requestAnimationFrame(() => {
+      document.getElementById("main-ai-composer-input")?.focus()
+    })
+    return () => cancelAnimationFrame(id)
+  }, [organizationManagement0425Demo, activeApp])
+
+  React.useEffect(() => {
+    if (!organizationManagement0425Demo || !organizationManagement0425CommandNonce) return
+    setInputValue(ORGANIZATION_MANAGEMENT_0425_USER_TRIGGER)
+    const id = requestAnimationFrame(() => {
+      document.getElementById("main-ai-composer-input")?.focus()
+    })
+    return () => cancelAnimationFrame(id)
+  }, [organizationManagement0425Demo, organizationManagement0425CommandNonce])
+
+  React.useEffect(() => {
+    if (!demoInstructionShell || !organizationManagement0425Demo) return;
+    if (!interactionRulesMainAiOrgDemoNonce) return;
+    if (interactionRulesMainAiOrgDemoNonce <= lastInteractionRulesOrgSwitcherDemoNonceRef.current)
+      return;
+    lastInteractionRulesOrgSwitcherDemoNonceRef.current = interactionRulesMainAiOrgDemoNonce;
+
+    setActiveApp(null);
+    setSchedule0422DrawerOpen(false);
+    setSecondaryHistoryOpen(false);
+    setInteractionRulesOrgCardResetKey(0);
+    setInteractionRulesOrg0425SwitcherPlacement("external");
+    interactionRulesOrg0425PendingScheme2Ref.current = false;
+
+    const now = Date.now();
+    const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const botId = `org-management-0425-bot-${now}`;
+    setInteractionRulesOrgCardMessageId(botId);
+    beginNewUserChatRound("main");
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `org-management-0425-user-${now}`,
+        senderId: currentUser.id,
+        content: ORGANIZATION_MANAGEMENT_0425_USER_TRIGGER,
+        timestamp: ts,
+        createdAt: now,
+      },
+      {
+        id: botId,
+        senderId: conversation.user.id,
+        content: ORGANIZATION_MANAGEMENT_0425_MARKER,
+        timestamp: ts,
+        createdAt: now + 1,
+        isAfterPrompt: true,
+      },
+    ]);
+  }, [
+    demoInstructionShell,
+    organizationManagement0425Demo,
+    interactionRulesMainAiOrgDemoNonce,
+    beginNewUserChatRound,
+    conversation.user.id,
+  ]);
+
+  React.useEffect(() => {
+    if (!interactionRulesOrgNavDemo) return;
+    if (!interactionRulesOrg0425PendingScheme2Ref.current) return;
+    if (messages.length > 0) return;
+    interactionRulesOrg0425PendingScheme2Ref.current = false;
+
+    const now = Date.now();
+    const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const botId = `org-management-0425-bot-${now}`;
+    setInteractionRulesOrgCardMessageId(botId);
+    beginNewUserChatRound("main");
+    setMessages([
+      {
+        id: `org-management-0425-user-${now}`,
+        senderId: currentUser.id,
+        content: ORGANIZATION_MANAGEMENT_0425_USER_TRIGGER,
+        timestamp: ts,
+        createdAt: now,
+      },
+      {
+        id: botId,
+        senderId: conversation.user.id,
+        content: ORGANIZATION_MANAGEMENT_0425_MARKER,
+        timestamp: ts,
+        createdAt: now + 1,
+        isAfterPrompt: true,
+      },
+    ]);
+  }, [messages.length, interactionRulesOrgNavDemo, beginNewUserChatRound, conversation.user.id]);
+
   const handleSendMessage = () => {
     if (!inputValue.trim()) return
 
     if (activeApp !== null) {
       interactionRulesNaturalDialogArmRef.current = false
+      interactionRulesBusinessCardDemoArmRef.current = false
     }
 
     // Auto-collapse pinned task card when user sends a message
@@ -2832,6 +3171,37 @@ export function MainAIChatWindow({
       content: inputValue,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       createdAt: Date.now()
+    }
+
+    if (activeApp === null && interactionRulesBusinessCardDemoArmRef.current) {
+      interactionRulesBusinessCardDemoArmRef.current = false
+      beginNewUserChatRound("main")
+      setMessages((prev) => [...prev, newUserMessage])
+      setInputValue("")
+      const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      const now = Date.now()
+      setTimeout(() => {
+        const cardData = JSON.stringify({
+          title: "已识别：创建组织",
+          description:
+            "（规范文档演示）系统从自然语言中抽出业务意图后，可在同一对话流中挂载交互卡片，承载下一步的结构化操作。",
+          detail:
+            "下面为通用信息卡示例（演示数据，非真实提交）：\n• 与规范「3.2 交互卡片」层对应\n• 实际产品中此处常为表单卡、列表卡或任务卡等",
+          imageSrc: organizationIcon,
+        })
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `bot-ir-biz-card-${now}`,
+            senderId: conversation.user.id,
+            content: `<<<RENDER_GENERIC_CARD>>>:${cardData}`,
+            timestamp: ts,
+            createdAt: now,
+            isAfterPrompt: true,
+          },
+        ])
+      }, 480)
+      return
     }
 
     if (activeApp === 'education') {
@@ -2983,6 +3353,14 @@ export function MainAIChatWindow({
       inputValue.toLowerCase().includes(cmd.toLowerCase())
     )
 
+    const isPermissionEdit0424UserCommand =
+      permissionEditCard0424Demo &&
+      activeApp === null &&
+      inputValue.includes(PERMISSION_EDIT_CARD_0424_USER_TRIGGER)
+    const isOrganizationManagement0425UserCommand =
+      organizationManagement0425Demo &&
+      (activeApp === null || activeApp === "organization") &&
+      inputValue.includes(ORGANIZATION_MANAGEMENT_0425_USER_TRIGGER)
     const hadNaturalDialogArm =
       activeApp === null && interactionRulesNaturalDialogArmRef.current
     const shouldPlayNaturalDialogDemo =
@@ -2991,7 +3369,9 @@ export function MainAIChatWindow({
       !isCreateEmailCommand &&
       !isCreateOrgCommand &&
       !isJoinOrgCommand &&
-      !isSwitchOrgCommand
+      !isSwitchOrgCommand &&
+      !isPermissionEdit0424UserCommand &&
+      !isOrganizationManagement0425UserCommand
     if (hadNaturalDialogArm) {
       interactionRulesNaturalDialogArmRef.current = false
     }
@@ -3057,9 +3437,70 @@ export function MainAIChatWindow({
       setTimeout(() => {
         setMessages(prev => [...prev, switchMsg]);
       }, 500)
+    } else if (isPermissionEdit0424UserCommand) {
+      const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      const now = Date.now()
+      const permMsg: Message = {
+        id: `perm-edit-0424-${now}`,
+        senderId: conversation.user.id,
+        content: PERMISSION_EDIT_CARD_0424_MARKER,
+        timestamp: ts,
+        createdAt: now,
+        isAfterPrompt: true,
+      }
+      setTimeout(() => {
+        setMessages((prev) => [...prev, permMsg])
+      }, 500)
+    } else if (isOrganizationManagement0425UserCommand) {
+      const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      const now = Date.now()
+      const orgMgmtMsg: Message = {
+        id: `org-management-0425-${now}`,
+        senderId: conversation.user.id,
+        content: ORGANIZATION_MANAGEMENT_0425_MARKER,
+        timestamp: ts,
+        createdAt: now,
+        isAfterPrompt: true,
+      }
+      setTimeout(() => {
+        setMessages((prev) => [...prev, orgMgmtMsg])
+      }, 500)
     }
 
-    beginNewUserChatRound("main");
+    let mainMessagesRoundSurface: NewRoundChatSurface = "main";
+    if (
+      invite0421DockFlow &&
+      !(hasOrganization || workbenchOrgGateReleased) &&
+      activeApp === "todo"
+    ) {
+      mainMessagesRoundSurface = "todo";
+    } else if (
+      invite0421DockFlow &&
+      !(hasOrganization || workbenchOrgGateReleased) &&
+      activeApp === "meeting"
+    ) {
+      mainMessagesRoundSurface = "meeting";
+    } else if (
+      invite0421DockFlow &&
+      !(hasOrganization || workbenchOrgGateReleased) &&
+      activeApp === "disk"
+    ) {
+      mainMessagesRoundSurface = "disk";
+    } else if (
+      invite0421DockFlow &&
+      !(hasOrganization || workbenchOrgGateReleased) &&
+      activeApp === "docs"
+    ) {
+      mainMessagesRoundSurface = "docs";
+    } else if (
+      invite0421DockFlow &&
+      !(hasOrganization || workbenchOrgGateReleased) &&
+      activeApp === "schedule" &&
+      !schedule0422DrawerDemo
+    ) {
+      mainMessagesRoundSurface = "schedule";
+    }
+    beginNewUserChatRound(mainMessagesRoundSurface);
     setMessages(updatedMessages);
     setInputValue("");
     if (shouldPlayNaturalDialogDemo) {
@@ -3117,6 +3558,30 @@ export function MainAIChatWindow({
     setMessages(prev => [...prev, newFormMsg])
   }
 
+  const appendOrganizationManagement0425Card = React.useCallback(() => {
+    beginNewUserChatRound("main");
+    const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const now = Date.now();
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `org-management-0425-user-${now}`,
+        senderId: currentUser.id,
+        content: ORGANIZATION_MANAGEMENT_0425_USER_TRIGGER,
+        timestamp: ts,
+        createdAt: now,
+      },
+      {
+        id: `org-management-0425-bot-${now}`,
+        senderId: conversation.user.id,
+        content: ORGANIZATION_MANAGEMENT_0425_MARKER,
+        timestamp: ts,
+        createdAt: now + 1,
+        isAfterPrompt: true,
+      },
+    ]);
+  }, [beginNewUserChatRound, conversation.user.id]);
+
   // Organization handlers
   const handleOrgClick = () => {
     const orgSwitcherMsg: Message = {
@@ -3149,12 +3614,16 @@ export function MainAIChatWindow({
 
   const handleOrgSwitch = (orgId: string) => {
     const selectedOrg =
+      schedule0422NavOrganizations.find((o) => o.id === orgId) ??
       AVAILABLE_ORGANIZATIONS.find((o) => o.id === orgId) ??
       invite0421JoinedOrganizationList.find((o) => o.id === orgId);
     if (!selectedOrg) return;
 
     setCurrentOrg(orgId);
     setWorkbenchOrgGateReleased(true);
+    if (interactionRulesOrgNavDemo && interactionRulesOrgCardMessageId) {
+      setInteractionRulesOrgCardResetKey((k) => k + 1);
+    }
   };
 
   const handleCreateOrg = () => {
@@ -3583,14 +4052,31 @@ export function MainAIChatWindow({
       on0419NewSession();
       return;
     }
-    // Implement new conversation logic (could just clear messages or create a new empty state)
-    console.log('Start new conversation')
-    // Resetting for visual effect
+    if (interactionRulesOrgNavDemo && !interactionRulesOrg0425PendingScheme2Ref.current) {
+      setInteractionRulesOrgCardMessageId(null);
+      setInteractionRulesOrg0425SwitcherPlacement("external");
+      interactionRulesOrg0425PendingScheme2Ref.current = false;
+    }
     setMessages([]);
     setNewRoundSlot(null);
     newRoundScrollAppliedRef.current = false;
     sameRoundScrollSuppressRef.current = null;
-  }
+  };
+
+  const handleInteractionRulesOrg0425Scheme2Demo = React.useCallback(() => {
+    if (!interactionRulesOrgNavDemo) return;
+    interactionRulesOrg0425PendingScheme2Ref.current = true;
+    setInteractionRulesOrg0425SwitcherPlacement("internal");
+    setInteractionRulesOrgCardResetKey(0);
+    if (is0419Explore && on0419NewSession) {
+      on0419NewSession();
+      return;
+    }
+    setMessages([]);
+    setNewRoundSlot(null);
+    newRoundScrollAppliedRef.current = false;
+    sameRoundScrollSuppressRef.current = null;
+  }, [interactionRulesOrgNavDemo, is0419Explore, on0419NewSession]);
 
   const handleSecondaryAppNewConversation = () => {
     // Clear education messages for new conversation
@@ -3674,7 +4160,12 @@ export function MainAIChatWindow({
       onOverflow: releaseNewRoundSlot,
       shellRef: newRoundShellRef,
       messageGapClassName:
-        activeApp === "task" || activeApp === "schedule"
+        activeApp === "task" ||
+        activeApp === "schedule" ||
+        activeApp === "todo" ||
+        activeApp === "meeting" ||
+        activeApp === "disk" ||
+        activeApp === "docs"
           ? "gap-[var(--space-500)]"
           : activeApp === "mail"
             ? "gap-[var(--space-150)]"
@@ -3683,6 +4174,55 @@ export function MainAIChatWindow({
       revealChildrenAfterMs: CHAT_SCROLL_ALIGN_DURATION_MS,
     };
   }, [newRoundSlot, is0419Explore, activeApp, releaseNewRoundSlot]);
+
+  /** 驱动「去底部」在消息/槽位变化后重算，并避免滚动区 remount 后监听仍挂在旧 DOM 上 */
+  const chatScrollFabLayoutKey = React.useMemo(() => {
+    const len =
+      activeApp === "education"
+        ? educationMessages.length
+        : activeApp === "task"
+          ? taskMessages.length
+          : activeApp === "mail"
+            ? mailMessages.length
+            : messages.length;
+    const slotKey =
+      newRoundSlot == null
+        ? "0"
+        : `${newRoundSlot.startMessageIndex}-${newRoundSlot.slotHeightPx}-${newRoundSlot.armedActiveApp ?? ""}`;
+    return `${is0419Explore ? 1 : 0}|${activeApp ?? ""}|${len}|${slotKey}`;
+  }, [
+    activeApp,
+    is0419Explore,
+    messages.length,
+    educationMessages.length,
+    taskMessages.length,
+    mailMessages.length,
+    newRoundSlot,
+  ]);
+
+  /** 与 `newRoundSlot.slotHeightPx` 同源，供「去底部」距离阈值随槽位策略同步 */
+  const getChatScrollFabDistanceThresholdPx = React.useCallback(() => {
+    const c = chatContainerRef.current;
+    const pin = pinnedTaskStickyRef.current;
+    const showPinnedExplorer = is0419Explore || activeApp === null;
+    const fullH = c?.clientHeight ?? 480;
+    const pinH = showPinnedExplorer && pin ? pin.offsetHeight : 0;
+    return computeNewRoundSlotHeightPx({
+      chatClientHeight: fullH,
+      pinOverlayHeight: pinH,
+      demoInstructionShell,
+    });
+  }, [is0419Explore, activeApp, demoInstructionShell]);
+
+  const getFloatingChatScrollFabDistanceThresholdPx = React.useCallback(() => {
+    const c = floatingChatScrollRef.current;
+    const fullH = c?.clientHeight ?? 480;
+    return computeNewRoundSlotHeightPx({
+      chatClientHeight: fullH,
+      pinOverlayHeight: 0,
+      demoInstructionShell,
+    });
+  }, [demoInstructionShell]);
 
   const renderMessageList = (
     messagesList: Message[],
@@ -3802,6 +4342,13 @@ export function MainAIChatWindow({
         schedule0422DrawerDemo &&
         (appContext === "main" || appContext === "schedule") &&
         msg.content === SCHEDULE_0422_ALL_LIST_MARKER;
+      const isPermissionEdit0424Card =
+        permissionEditCard0424Demo && msg.content === PERMISSION_EDIT_CARD_0424_MARKER;
+      const isPermissionDetail0424Card =
+        permissionEditCard0424Demo &&
+        msg.content.startsWith(PERMISSION_DETAIL_CARD_0424_MARKER_PREFIX);
+      const isOrganizationManagement0425Card =
+        organizationManagement0425Demo && msg.content === ORGANIZATION_MANAGEMENT_0425_MARKER;
       const operationSourceLabel = resolveOperationSourceLabel(msg, index, arr, conversation.id);
       /** 任务侧全宽对话卡片：禁止与上一条合并头像区，否则连续卡片会套用 -mt 叠在一起 */
       const isTaskWideChatCard =
@@ -3824,6 +4371,9 @@ export function MainAIChatWindow({
         isExecutionDivisionDetailCard ||
         isKanbanScopeListCard ||
         isSchedule0422AllList ||
+        isPermissionEdit0424Card ||
+        isPermissionDetail0424Card ||
+        isOrganizationManagement0425Card ||
         isGenericCard ||
         isInvite0421OrgEmployeeOnboard ||
         isInvite0421EduStudentInviteFlow;
@@ -3863,7 +4413,10 @@ export function MainAIChatWindow({
         isExecutionDivisionListCard ||
         isExecutionDivisionDetailCard ||
         isKanbanScopeListCard ||
-        isSchedule0422AllList;
+        isSchedule0422AllList ||
+        isPermissionEdit0424Card ||
+        isPermissionDetail0424Card ||
+        isOrganizationManagement0425Card;
       const showTimestamp = shouldShowTimestamp(msg, index > 0 ? arr[index - 1] : null)
       const isSameSender = index > 0 && arr[index - 1].senderId === msg.senderId;
       const isWithin10Seconds = index > 0 && 
@@ -4986,6 +5539,99 @@ export function MainAIChatWindow({
             >
                 <TaskSettingsCard />
             </TaskChatMessageRow>
+          ) : isPermissionEdit0424Card ? (
+            <TaskChatMessageRow
+              hideAvatar={hideAvatar}
+              avatarSrc={conversation.user.avatar}
+              operationSourceLabel={operationSourceLabel}
+            >
+              <PermissionEditCard0424
+                onScrollMutatedCardToTop={() => scrollInPlaceMutatedCardToTop(msg.id)}
+                onReplaceWithDetail={(payload: PermissionEditDetailPayload0424) => {
+                  scrollInPlaceMutatedCardToTop(msg.id);
+                  patchMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === msg.id
+                        ? {
+                            ...m,
+                            content: `${PERMISSION_DETAIL_CARD_0424_MARKER_PREFIX}${JSON.stringify(payload)}`,
+                          }
+                        : m,
+                    ),
+                  );
+                }}
+              />
+            </TaskChatMessageRow>
+          ) : isPermissionDetail0424Card ? (
+            <TaskChatMessageRow
+              hideAvatar={hideAvatar}
+              avatarSrc={conversation.user.avatar}
+              operationSourceLabel={operationSourceLabel}
+            >
+              {(() => {
+                try {
+                  const raw = msg.content.slice(PERMISSION_DETAIL_CARD_0424_MARKER_PREFIX.length);
+                  const payload = JSON.parse(raw) as PermissionEditDetailPayload0424;
+                  return <PermissionDetailCard0424 payload={payload} />;
+                } catch {
+                  return (
+                    <div className="text-[length:var(--font-size-sm)] text-[color:var(--color-error)]">
+                      权限详情数据解析失败
+                    </div>
+                  );
+                }
+              })()}
+            </TaskChatMessageRow>
+          ) : isOrganizationManagement0425Card ? (
+            <>
+              {interactionRulesOrgNavDemo &&
+              interactionRulesOrg0425SwitcherPlacement === "external" &&
+              interactionRulesOrgCardMessageId === msg.id ? (
+                <InteractionRulesOrgSelectBar
+                  organizations={schedule0422NavOrganizations}
+                  currentOrgId={currentOrg}
+                  onOrgSelect={handleOrgSwitch}
+                />
+              ) : null}
+              <TaskChatMessageRow
+                hideAvatar={hideAvatar}
+                avatarSrc={conversation.user.avatar}
+                operationSourceLabel={operationSourceLabel}
+              >
+                <div className="flex w-full min-w-0 flex-col gap-[var(--space-150)]">
+                  <OrganizationManagementCard0425
+                    key={`org0425-${msg.id}-${interactionRulesOrgCardResetKey}`}
+                    organizationHeadline={
+                      currentOrg !== NO_ORG_MESSAGE_SCOPE
+                        ? schedule0422NavOrganizations.find((o) => o.id === currentOrg)?.name ??
+                          currentOrg
+                        : undefined
+                    }
+                    titleBelowAccessory={
+                      interactionRulesOrgNavDemo &&
+                      interactionRulesOrg0425SwitcherPlacement === "internal" &&
+                      interactionRulesOrgCardMessageId === msg.id ? (
+                        <InteractionRulesOrgSelectBar
+                          organizations={schedule0422NavOrganizations}
+                          currentOrgId={currentOrg}
+                          onOrgSelect={handleOrgSwitch}
+                          embedded
+                        />
+                      ) : undefined
+                    }
+                  />
+                  {interactionRulesOrgNavDemo &&
+                  interactionRulesOrg0425SwitcherPlacement === "external" &&
+                  interactionRulesOrgCardMessageId === msg.id ? (
+                    <div className="flex flex-wrap gap-[var(--space-200)]">
+                      <ChatPromptButton type="button" onClick={handleInteractionRulesOrg0425Scheme2Demo}>
+                        演示：查看方案2
+                      </ChatPromptButton>
+                    </div>
+                  ) : null}
+                </div>
+              </TaskChatMessageRow>
+            </>
           ) : isGenericCard ? (
             <TaskChatMessageRow
               hideAvatar={hideAvatar}
@@ -5792,7 +6438,17 @@ export function MainAIChatWindow({
                   ? "邮箱"
                   : activeApp === "schedule"
                     ? "日程"
-                    : ""
+                    : activeApp === "organization"
+                      ? "组织"
+                      : activeApp === "todo"
+                        ? "待办"
+                        : activeApp === "meeting"
+                          ? "会议"
+                          : activeApp === "disk"
+                            ? "微盘"
+                            : activeApp === "docs"
+                              ? "文档"
+                              : ""
             : activeApp === "education"
               ? "教育"
               : activeApp === "task"
@@ -5801,7 +6457,17 @@ export function MainAIChatWindow({
                   ? "邮箱"
                   : activeApp === "schedule"
                     ? "日程"
-                    : ""
+                    : activeApp === "organization"
+                      ? "组织"
+                      : activeApp === "todo"
+                        ? "待办"
+                        : activeApp === "meeting"
+                          ? "会议"
+                          : activeApp === "disk"
+                            ? "微盘"
+                            : activeApp === "docs"
+                              ? "文档"
+                              : ""
         }
         onToggleHistory={() => {
           if (is0419Explore) {
@@ -5821,10 +6487,15 @@ export function MainAIChatWindow({
         }}
         onNewMessage={activeApp ? undefined : handleNewConversation}
         showOrgSelect={
-          hasOrganization && activeApp !== "mail" && activeApp !== "education"
+          (hasOrganization || interactionRulesOrgNavDemo) &&
+          activeApp !== "mail" &&
+          activeApp !== "education"
         }
         organizationOnboarding={
-          !hasOrganization && activeApp !== "mail" && activeApp !== "education"
+          !hasOrganization &&
+          !interactionRulesOrgNavDemo &&
+          activeApp !== "mail" &&
+          activeApp !== "education"
             ? {
                 onCreateOrganization: handleCreateOrg,
                 onJoinOrganization: handleJoinOrg,
@@ -5860,7 +6531,15 @@ export function MainAIChatWindow({
           activeApp === "education" ||
           activeApp === "task" ||
           activeApp === "mail" ||
-          (schedule0422DrawerDemo && activeApp === "schedule")
+          (organizationManagement0425Demo && activeApp === "organization") ||
+          (schedule0422DrawerDemo && activeApp === "schedule") ||
+          (invite0421DockFlow &&
+            !(hasOrganization || workbenchOrgGateReleased) &&
+            (activeApp === "todo" ||
+              activeApp === "meeting" ||
+              activeApp === "disk" ||
+              activeApp === "docs" ||
+              (activeApp === "schedule" && !schedule0422DrawerDemo)))
             ? () => setActiveApp(null)
             : undefined
         }
@@ -6234,6 +6913,46 @@ export function MainAIChatWindow({
                 </div>
               ) : null}
             </div>
+          ) : activeApp === "organization" && organizationManagement0425Demo ? (
+            <div className="flex w-full flex-col gap-[var(--space-200)]">
+              <ChatWelcome
+                avatarSrc={conversation.user.avatar}
+                greeting="你好，我是你的组织专属 AI 助手。可以用快捷入口打开组织管理，或直接描述组织相关事项。"
+              />
+              <div className="flex flex-wrap gap-[var(--space-200)] w-full md:ml-[44px]">
+                <ChatPromptButton type="button" onClick={appendOrganizationManagement0425Card}>
+                  组织管理
+                </ChatPromptButton>
+                <ChatPromptButton type="button" onClick={handleOrgClick}>
+                  切换组织
+                </ChatPromptButton>
+              </div>
+            </div>
+          ) : invite0421DockFlow &&
+            !(hasOrganization || workbenchOrgGateReleased) &&
+            (activeApp === "todo" ||
+              activeApp === "meeting" ||
+              activeApp === "disk" ||
+              activeApp === "docs" ||
+              (activeApp === "schedule" && !schedule0422DrawerDemo)) ? (
+            <div className="flex w-full flex-col gap-[var(--space-200)]">
+              <ChatWelcome
+                avatarSrc={conversation.user.avatar}
+                greeting={
+                  activeApp === "schedule"
+                    ? "你好，我是你的日程助手。可直接描述安排，或使用底部能力入口（演示占位）。"
+                    : activeApp === "todo"
+                      ? "你好，我是你的待办助手。把事项口述给我，我会协助整理与跟进（演示占位）。"
+                      : activeApp === "meeting"
+                        ? "你好，我是你的会议助手。可说明会议主题与时间，我会协助记录与提醒（演示占位）。"
+                        : activeApp === "disk"
+                          ? "你好，我是你的微盘助手。可描述要存或找的文件（演示占位）。"
+                          : activeApp === "docs"
+                            ? "你好，我是你的文档助手。可说明要写的材料或要打开的文档（演示占位）。"
+                            : "你好，我可以协助你处理当前应用中的事项（演示占位）。"
+                }
+              />
+            </div>
           ) : null}
 
           {/* Conversation Messages；任务侧多卡片纵向间距 20px（--space-500），不改动单卡内「卡片↔行动建议」 */}
@@ -6266,7 +6985,11 @@ export function MainAIChatWindow({
           {activeApp !== "mail" ? <div ref={scrollRef} /> : null}
         </div>
         </motion.div>
-        <ChatScrollToBottomFab scrollRootRef={chatContainerRef} />
+        <ChatScrollToBottomFab
+          scrollRootRef={chatContainerRef}
+          layoutSyncKey={chatScrollFabLayoutKey}
+          getDistanceThresholdPx={getChatScrollFabDistanceThresholdPx}
+        />
       </div>
 
       {/* Input Area and Bottom App Bar */}
@@ -6697,6 +7420,76 @@ export function MainAIChatWindow({
                   />
                 ))}
               </motion.div>
+            ) : invite0421NoOrgShellPersonalDock ? (
+              <motion.div
+                key="invite0421-shell-personal-dock"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="flex min-w-0 flex-1 items-center justify-start gap-[var(--space-200)]"
+              >
+                <button
+                  type="button"
+                  onClick={() => setActiveApp(null)}
+                  className="bg-bg flex shrink-0 gap-[var(--space-100)] h-[var(--space-800)] items-center px-[var(--space-300)] py-[var(--space-150)] rounded-full hover:bg-[var(--black-alpha-11)] transition-all duration-300 ease-out border border-border group"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-text-secondary group-hover:text-text transition-colors">
+                    <path d="M8.75 3.5L5.25 7L8.75 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <p className="text-[length:var(--font-size-xs)] leading-none text-text-secondary group-hover:text-text whitespace-nowrap font-[var(--font-weight-medium)] transition-colors">
+                    返回
+                  </p>
+                </button>
+                <OrganizationSwitcherButton
+                  onClick={() => setIsAllAppsOpen(true)}
+                  isOpen={isAllAppsOpen}
+                  currentApp={switcherCurrentApp}
+                />
+              </motion.div>
+            ) : activeApp === "organization" && organizationManagement0425Demo ? (
+              <motion.div
+                key="organization-mode"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="flex min-w-0 flex-1 items-center justify-start gap-[var(--space-200)]"
+              >
+                <button
+                  type="button"
+                  onClick={() => setActiveApp(null)}
+                  className="bg-bg flex shrink-0 gap-[var(--space-100)] h-[var(--space-800)] items-center px-[var(--space-300)] py-[var(--space-150)] rounded-full hover:bg-[var(--black-alpha-11)] transition-all duration-300 ease-out border border-border group"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-text-secondary group-hover:text-text transition-colors">
+                    <path d="M8.75 3.5L5.25 7L8.75 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <p className="text-[length:var(--font-size-xs)] leading-none text-text-secondary group-hover:text-text whitespace-nowrap font-[var(--font-weight-medium)] transition-colors">
+                    返回
+                  </p>
+                </button>
+
+                <OrganizationSwitcherButton
+                  onClick={() => setIsAllAppsOpen(true)}
+                  isOpen={isAllAppsOpen}
+                  currentApp={switcherCurrentApp}
+                />
+                <div className="scrollbar-hide flex min-w-0 flex-1 items-center gap-[var(--space-150)] overflow-x-auto overflow-y-hidden pb-[var(--space-50)]">
+                  {ORGANIZATION_0425_APPS.map((app) => (
+                    <SecondaryAppButton
+                      key={app.id}
+                      app={app}
+                      onMenuClick={(_menu, appName, appId) => {
+                        if (appId === "org_management") {
+                          appendOrganizationManagement0425Card();
+                          return;
+                        }
+                        toast(`${appName}入口已打开（演示占位）`);
+                      }}
+                    />
+                  ))}
+                </div>
+              </motion.div>
             ) : activeApp === "schedule" && schedule0422DrawerDemo ? (
               <motion.div
                 key="schedule-mode"
@@ -6780,7 +7573,11 @@ export function MainAIChatWindow({
                       if (
                         app.id === "education" ||
                         app.id === "task" ||
-                        (schedule0422DrawerDemo && app.id === "schedule")
+                        (organizationManagement0425Demo && app.id === "organization") ||
+                        (schedule0422DrawerDemo && app.id === "schedule") ||
+                        (invite0421DockFlow &&
+                          !(hasOrganization || workbenchOrgGateReleased) &&
+                          (INVITE0421_NO_ORG_DOCK_APP_IDS_ORDERED as readonly string[]).includes(app.id))
                       ) {
                         tryEnterWorkbenchApp(app.id);
                       }
@@ -7005,7 +7802,11 @@ export function MainAIChatWindow({
                       <div className="h-px w-full shrink-0" aria-hidden />
                     </div>
                     </motion.div>
-                    <ChatScrollToBottomFab scrollRootRef={floatingChatScrollRef} />
+                    <ChatScrollToBottomFab
+                      scrollRootRef={floatingChatScrollRef}
+                      layoutSyncKey={educationMessages.length}
+                      getDistanceThresholdPx={getFloatingChatScrollFabDistanceThresholdPx}
+                    />
                   </div>
 
                   {/* Input Area and Bottom App Bar */}

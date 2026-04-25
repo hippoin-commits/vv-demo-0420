@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useLocation, useNavigate } from "react-router"
-import { ArrowLeft, Check, Copy } from "lucide-react"
+import { ArrowLeft, Check, ChevronDown, Copy } from "lucide-react"
 import { Toaster } from "../ui/sonner"
 import { NavModulePlaceholder } from "../vv-app-shell/NavModulePlaceholder"
 import { ShortcutModulePlaceholder } from "../vv-app-shell/ShortcutModulePlaceholder"
@@ -31,6 +31,13 @@ import { getDemoNavBarTitle } from "../../constants/demoHomeNavEntries"
 import { InteractionRulesChangelogLauncher } from "./InteractionRulesChangelogDialog"
 import { InteractionRulesDocShell } from "./InteractionRulesDocShell"
 import type { DemoInstructionCommand } from "./demoInstructionTypes"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu"
+import { ORGANIZATION_MANAGEMENT_0425_USER_TRIGGER } from "../../constants/organizationManagement0425"
 
 /** 0419 演示：用首条用户发言模拟「AI 生成的侧栏标题」 */
 function deriveMockAiSessionTitleFromUserText(text: string): string {
@@ -88,6 +95,10 @@ export function MainAI(props: {
    * 「演示区域」无特别说明时即指文档演示区域；维护约定见 `interactionRulesSpecData.ts` 顶部注释。
    */
   demoInstructionShell?: boolean;
+  /** 0424-权限编辑卡片方案 */
+  permissionEditCard0424Demo?: boolean;
+  /** 0425-案例-组织管理+权限申请 */
+  organizationManagement0425Demo?: boolean;
 } = {}) {
   const {
     initialActiveApp = null,
@@ -106,6 +117,8 @@ export function MainAI(props: {
     schedule0422DrawerDemo = false,
     initialConversationId,
     demoInstructionShell = false,
+    permissionEditCard0424Demo = false,
+    organizationManagement0425Demo = false,
   } = props;
 
   const invite0421ShellDockActive = invite0421NewUserFlow || invite0421EduStudentFlow;
@@ -154,6 +167,12 @@ export function MainAI(props: {
   const [invite0421OpenEducationNonce, setInvite0421OpenEducationNonce] =
     React.useState(0)
   const [interactionRulesNaturalDialogDemoNonce, setInteractionRulesNaturalDialogDemoNonce] =
+    React.useState(0)
+  const [interactionRulesBusinessCardDemoNonce, setInteractionRulesBusinessCardDemoNonce] =
+    React.useState(0)
+  const [organizationManagement0425CommandNonce, setOrganizationManagement0425CommandNonce] =
+    React.useState(0)
+  const [interactionRulesMainAiOrgDemoNonce, setInteractionRulesMainAiOrgDemoNonce] =
     React.useState(0)
 
   const clearInvite0421ShellGateRequest = React.useCallback(() => {
@@ -274,33 +293,24 @@ export function MainAI(props: {
   const handleDemoInstructionCommand = React.useCallback(
     (cmd: DemoInstructionCommand) => {
       switch (cmd.kind) {
-        case "primaryNav":
-          setPrimaryNavId(cmd.id)
-          setShortcutId(null)
-          break
-        case "invite0421ShellGate":
-          if (invite0421ShellDockActive) {
-            setPrimaryNavId("ai")
-            setShortcutId(null)
-            setInvite0421ShellGateRequest({ id: cmd.id, nonce: Date.now() })
-          }
-          break
-        case "invite0421OpenEducation":
-          setPrimaryNavId("ai")
-          setShortcutId(null)
-          setInvite0421OpenEducationNonce((n) => n + 1)
-          break
-        case "navigate":
-          navigate(cmd.path)
-          break
         case "prefillNaturalDialogDemo":
           setPrimaryNavId("ai")
           setShortcutId(null)
           setInteractionRulesNaturalDialogDemoNonce((n) => n + 1)
           break
+        case "prefillBusinessCardCommandDemo":
+          setPrimaryNavId("ai")
+          setShortcutId(null)
+          setInteractionRulesBusinessCardDemoNonce((n) => n + 1)
+          break
+        case "showMainAiOrgManagementSwitcherDemo":
+          setPrimaryNavId("ai")
+          setShortcutId(null)
+          setInteractionRulesMainAiOrgDemoNonce((n) => n + 1)
+          break
       }
     },
-    [invite0421ShellDockActive, navigate],
+    [],
   )
 
   const showMailDemoScenario =
@@ -355,6 +365,16 @@ export function MainAI(props: {
           interactionRulesNaturalDialogDemoNonce={
             demoInstructionShell ? interactionRulesNaturalDialogDemoNonce : 0
           }
+          interactionRulesBusinessCardDemoNonce={
+            demoInstructionShell ? interactionRulesBusinessCardDemoNonce : 0
+          }
+          interactionRulesMainAiOrgDemoNonce={
+            demoInstructionShell ? interactionRulesMainAiOrgDemoNonce : 0
+          }
+          demoInstructionShell={demoInstructionShell}
+          permissionEditCard0424Demo={permissionEditCard0424Demo}
+          organizationManagement0425Demo={organizationManagement0425Demo}
+          organizationManagement0425CommandNonce={organizationManagement0425CommandNonce}
         />
       ) : primaryNavId === "message" && invite0421NewUserFlow ? (
         <Invite0421MessageModule
@@ -435,6 +455,28 @@ export function MainAI(props: {
             </button>
           ) : null}
           {demoInstructionShell ? <InteractionRulesChangelogLauncher /> : null}
+          {organizationManagement0425Demo ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="mr-[length:var(--space-300)] inline-flex h-[var(--space-900)] shrink-0 items-center justify-center gap-[var(--space-100)] rounded-full border border-border bg-bg px-[var(--space-350)] text-[length:var(--font-size-xs)] text-text-secondary shadow-elevation-sm transition-colors hover:bg-[var(--black-alpha-11)] hover:text-text"
+                >
+                  指令集
+                  <ChevronDown className="size-[var(--icon-xs)]" aria-hidden />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-[length:calc(var(--space-800)*5)]">
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setOrganizationManagement0425CommandNonce((n) => n + 1)
+                  }}
+                >
+                  {ORGANIZATION_MANAGEMENT_0425_USER_TRIGGER}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
           <div className="flex shrink-0 items-center justify-center w-[var(--space-900)] h-[var(--space-900)] rounded-full bg-bg shadow-elevation-sm hover:bg-[var(--black-alpha-11)] transition-colors border border-border">
             <ThemeToggle />
           </div>

@@ -29,10 +29,15 @@ const DialogOverlay = React.forwardRef<
 ));
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
+export type DialogContentProps = React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
+  /** 为 false 时不展示右上角关闭（由业务区提供「完成」等主操作关闭） */
+  showCloseButton?: boolean;
+};
+
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+  DialogContentProps
+>(({ className, children, showCloseButton = true, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
@@ -44,10 +49,12 @@ const DialogContent = React.forwardRef<
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute top-[9px] right-[12px] flex items-center justify-center w-[28px] h-[28px] rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--black-alpha-11)] hover:text-[var(--color-text)] transition-colors focus:outline-none disabled:pointer-events-none">
-        <XIcon className="w-[18px] h-[18px]" />
-        <span className="sr-only">Close</span>
-      </DialogPrimitive.Close>
+      {showCloseButton ? (
+        <DialogPrimitive.Close className="absolute top-[9px] right-[12px] flex items-center justify-center w-[28px] h-[28px] rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--black-alpha-11)] hover:text-[var(--color-text)] transition-colors focus:outline-none disabled:pointer-events-none">
+          <XIcon className="w-[18px] h-[18px]" />
+          <span className="sr-only">Close</span>
+        </DialogPrimitive.Close>
+      ) : null}
     </DialogPrimitive.Content>
   </DialogPortal>
 ));
@@ -117,6 +124,7 @@ export {
   DialogTrigger,
   DialogClose,
   DialogContent,
+  type DialogContentProps,
   DialogHeader,
   DialogFooter,
   DialogTitle,

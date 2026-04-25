@@ -14,8 +14,11 @@
  *    左侧大纲每节点 **最多一行** 演示入口（单条：`演示：{名}`；多条：`N个演示链接` 并滚动至正文末尾演示区）；**具体链接按钮** 一律排在对应章节正文末 `data-spec-demos` 区域。
  * 3. **若某 `num` 小节被删或合并**：将该节点下 **既有** `demoLinks` **整体迁到相邻或语义最近的序号节点**，
  *    **禁止**在未获指令的情况下删除或丢弃任何演示项。
- * 4. **删除演示按钮**：**仅当**需求方 **明确下达删除某条演示** 的指令时，方可从 `demoLinks` 中移除对应项；
- *    不得以「整理」「精简」为由擅自删演示。
+ * 4. **删除演示（仅当需求方明确下达删除某条演示时）**：
+ *    - **「移除演示」的默认含义**：移除该演示的**全部入口**——从所属 `SpecNode` 的 `demoLinks` 中删除对应项；左侧大纲该节点的演示摘要行与正文末「本节演示」区均由 `InteractionRulesDocShell` **据 `demoLinks` 自动生成**，**勿**只改 `body` 却漏改 `demoLinks`，也**勿**只删文档侧不打数据。
+ *    - **同节多条演示**：若删除后该 `SpecNode` 仍留有其它 `demoLinks`，左侧应自动反映剩余项（单条 `演示：…` 或「N个演示链接」等），**禁止**不加区分地清空整节大纲演示以致误伤同节点下其它演示。
+ *    - 若某 `DemoInstructionCommand` 分支已无任一 `demoLinks` 引用，可同步删除类型与 `handleDemoInstructionCommand` 等实现侧分支，避免死代码。
+ *    - 不得以「整理」「精简」为由擅自删演示。
  * 5. **正文 `body`（子集 Markdown）**：由 `specDocBodyRender.tsx` 渲染，支持 `**加粗**`、`-` / `  -` 列表、`1.` 有序列表、`>` 引用、单独一行的 `---`。
  * 6. **约定（持续更新规范时）**：日后继续改规范正文 / 大纲 / 序号时，**千万不要删除演示**；须 **保持每条演示仍挂在原语义对应的 `SpecNode` 上**（改 `num`/`title`/`body` 不动或整体迁移 `demoLinks`，见第 3 条，**禁止丢链**）。
  *    左侧大纲的演示摘要行与正文末尾「本节演示」区块均由 `InteractionRulesDocShell` **按该节点 `demoLinks` 自动生成**——数据层对位正确，界面上的演示入口即正确；**切勿**只改文档却清空、遗漏或错挂 `demoLinks`。
@@ -63,19 +66,24 @@ export const INTERACTION_RULES_SPEC_ROOT: SpecNode[] = [
         title: "CUI 定义",
         body:
           "Chat User Interface，对话式业务交互界面。\n以对话流承载完整 B 端业务操作，实现**自然语言 + GUI 操作深度融合**。",
-        demoLinks: [
-          {
-            id: "demo-1-1-nl",
-            label: "自然语言对话",
-            command: { kind: "prefillNaturalDialogDemo" },
-          },
-        ],
       },
       {
         id: "ch-1-2",
         num: "1.2",
         title: "与通用聊天 AI 差异",
         body: "不以纯问答为目标，核心是**自然语言驱动业务执行、多业务调度、状态化卡片展示**。",
+        demoLinks: [
+          {
+            id: "demo-1-2-nl",
+            label: "自然语言对话",
+            command: { kind: "prefillNaturalDialogDemo" },
+          },
+          {
+            id: "demo-1-2-biz-card",
+            label: "通过自然语言发送业务指令",
+            command: { kind: "prefillBusinessCardCommandDemo" },
+          },
+        ],
       },
       {
         id: "ch-1-3",
@@ -132,13 +140,6 @@ export const INTERACTION_RULES_SPEC_ROOT: SpecNode[] = [
 3. 可随时切换话题、切换业务，不受当前空间限制
 
 > 示例：上一句查邮箱，下一句直接说“查看今天日程”，系统重新调度至日历业务。`,
-        demoLinks: [
-          {
-            id: "demo-2-1-schedule",
-            label: "演示：切主区并打开教育空间",
-            command: { kind: "invite0421OpenEducation" },
-          },
-        ],
       },
       {
         id: "ch-2-2",
@@ -151,13 +152,6 @@ export const INTERACTION_RULES_SPEC_ROOT: SpecNode[] = [
 1. 点击事件自带明确业务属性，按固定交互逻辑直接执行
 2. 不进入 AI 上下文理解流程，保证操作稳定可预期
 3. 与自然语言输入地位平等，可任意交替使用`,
-        demoLinks: [
-          {
-            id: "demo-2-2-msg",
-            label: "演示：切到消息主区",
-            command: { kind: "primaryNav", id: "message" },
-          },
-        ],
       },
     ],
   },
@@ -182,6 +176,13 @@ export const INTERACTION_RULES_SPEC_ROOT: SpecNode[] = [
         id: "ch-3-2",
         num: "3.2",
         title: "交互卡片（业务状态层）",
+        demoLinks: [
+          {
+            id: "demo-3-2-org-switcher",
+            label: "主 AI 下展示组织/教育空间信息与切换入口",
+            command: { kind: "showMainAiOrgManagementSwitcherDemo" },
+          },
+        ],
         body: `- 承载内容：列表、详情、表单、筛选、日历、流程等各类业务展示
 - 核心规则：**同一数据对应同一张卡片，以状态切换替代不断新增卡片**
 - 标准状态：浏览态 ↔ 编辑态 ↔ 提交态 ↔ 取消态
@@ -193,13 +194,6 @@ export const INTERACTION_RULES_SPEC_ROOT: SpecNode[] = [
 3. 卡片内可显示轻量标记，如：更新于 2026-04-23
 
 > 示例：查看文件卡片 → 点击编辑 → 卡片就地变为编辑态 → 保存 → 切回浏览态并更新时间，全程对话流无新增文字。`,
-        demoLinks: [
-          {
-            id: "demo-3-2-ws",
-            label: "演示：工作台占位",
-            command: { kind: "primaryNav", id: "workspace" },
-          },
-        ],
       },
       {
         id: "ch-3-3",
@@ -211,18 +205,6 @@ export const INTERACTION_RULES_SPEC_ROOT: SpecNode[] = [
 - 生命周期：**一旦展示永久保留**，不受后续对话影响，可随时点击继续流程
 
 > 示例：查完日程后，行动建议显示【创建会议】【查看下周】，用户中途切去处理邮件，回来仍可点击继续。`,
-        demoLinks: [
-          {
-            id: "demo-3-3-edu-gate",
-            label: "演示：教育快捷门闩",
-            command: { kind: "invite0421ShellGate", id: "education" },
-          },
-          {
-            id: "demo-3-3-multi-sample-contacts",
-            label: "演示：切到通讯录（多链接示例）",
-            command: { kind: "primaryNav", id: "contacts" },
-          },
-        ],
       },
     ],
   },
@@ -286,13 +268,6 @@ export const INTERACTION_RULES_SPEC_ROOT: SpecNode[] = [
         body: `多步骤任务拆分为多轮对话，通过行动建议逐步引导，不强行一次性完成。
 
 > 示例：用户说“查看周日程并创建会议”，先展示日程卡片，再给出“创建会议”行动建议，引导分步完成。`,
-        demoLinks: [
-          {
-            id: "demo-5-3-nav",
-            label: "演示：跳转日程抽屉页",
-            command: { kind: "navigate", path: "/main-ai-0422-schedule-drawer-demo" },
-          },
-        ],
       },
     ],
   },
