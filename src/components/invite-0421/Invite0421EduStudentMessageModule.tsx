@@ -26,15 +26,12 @@ import {
   INVITE0421_EDU_SPACE_NAV,
   type Invite0421EduInviteFlowState,
 } from "./Invite0421EduStudentInviteFlowBody";
+import { CHAT_BUSINESS_ENTRY_DRAWER_SHEET_CLASSNAME } from "../../constants/chatBusinessEntryDrawer";
 
 /** 抽屉内「轮」与轮之间竖向间距（区别于同轮内 6px） */
 const EDU_DRAWER_ROUND_STACK_GAP = "gap-[length:var(--space-500)]";
 
 const TABS = ["全部", "@我", "未读", "单聊", "群聊", "工作"] as const;
-
-/** 与 Home「业务入口」抽屉一致：视口宽度 70%、左侧圆角、无默认边线 */
-const CHAT_BUSINESS_ENTRY_DRAWER_SHEET_CLASSNAME =
-  "h-full w-[70vw] max-w-[70vw] sm:max-w-[70vw] p-0 border-none rounded-l-[length:var(--radius-400)] overflow-hidden flex flex-col gap-0 shadow-2xl [&>button]:hidden";
 
 const IM_THREAD_PAD_X = "pl-[length:var(--space-400)] pr-[length:var(--space-400)]";
 const IM_CARD_MAX_W = "max-w-[length:calc(var(--space-800)*12+var(--space-400))]";

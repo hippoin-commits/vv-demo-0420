@@ -19,6 +19,8 @@ export interface OrganizationSwitcherCardProps {
   onSelectOrg: (orgId: string) => void;
   onCreateOrg?: () => void;
   onJoinOrg?: () => void;
+  /** 主 AI：卡片标题下与顶栏一致的组织切换条（无排序、无新建加入） */
+  titleBelowAccessory?: React.ReactNode;
 }
 
 export function OrganizationSwitcherCard({
@@ -26,7 +28,8 @@ export function OrganizationSwitcherCard({
   organizations,
   onSelectOrg,
   onCreateOrg,
-  onJoinOrg
+  onJoinOrg,
+  titleBelowAccessory,
 }: OrganizationSwitcherCardProps) {
   const [selectedOrgId, setSelectedOrgId] = React.useState(currentOrg.id);
 
@@ -42,7 +45,7 @@ export function OrganizationSwitcherCard({
 
   return (
     <div className="w-full flex flex-col gap-[var(--space-300)]">
-      <GenericCard title="切换组织">
+      <GenericCard title="切换组织" titleBelowAccessory={titleBelowAccessory}>
         {/* 当前组织信息 */}
         <div className="flex flex-col gap-[var(--space-200)] mb-[var(--space-400)]">
           <p className="text-[length:var(--font-size-xs)] text-text-secondary">当前组织</p>

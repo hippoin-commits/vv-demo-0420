@@ -1,0 +1,31 @@
+---
+description: 凡实现或修改「CUI 对话抽屉」（从主对话打开、内含助手叙事 + 业务卡片 + 底部输入）时，须与 Home「业务入口」及 `Schedule0422BusinessDrawer` 保持同一套完整壳层，避免自定义 SheetHeader-only 等残缺布局。
+globs: "**/*.tsx"
+---
+
+# CUI 对话抽屉 = 业务入口完整壳层
+
+当需求为「打开 CUI 对话抽屉」「抽屉里是对话 + 卡片」时，**必须**套用与 **Home「业务入口」**、**`Schedule0422BusinessDrawer`**、**`Invite0421MessageModule` 右侧 Sheet** 相同的整体结构，而不是仅用 `SheetHeader` + 表单区的简化抽屉。
+
+## 必须包含的结构（自上而下）
+
+1. **`Sheet` + `SheetContent`**：`className` 使用共享常量 `CHAT_BUSINESS_ENTRY_DRAWER_SHEET_CLASSNAME`（见 `src/constants/chatBusinessEntryDrawer.ts`），`side="right"`。
+2. **无障碍**：`SheetTitle` / `SheetDescription` 放在 `sr-only` 容器内（可视标题交给 `ChatNavBar`）。
+3. **根容器**：`flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-cui-bg`。
+4. **`ChatNavBar`**：`titleOnlyChrome`、`showClose`、`onClose`；`title` 为当前业务上下文短标题。
+5. **`ScrollArea`**：`className="relative z-10 min-h-0 flex-1"`；内层：
+   - `mx-auto flex min-h-full w-full max-w-[1920px] flex-col px-[max(20px,var(--cui-padding-max))] py-[var(--space-500)]`
+   - 与 **`INVITE0421_DRAWER_ASSISTANT_GROUP_STACK_CLASSNAME`**（`Invite0421DrawerAssistantRow` 同组 6px 竖向栈）组合。
+6. **对话区**：至少一行 **`Invite0421DrawerAssistantRow` + `AssistantChatBubble`**（微微 AI 叙事）；业务内容放在后续 **`Invite0421DrawerAssistantRow`（`showAvatar={false}`）** 内的 **`GenericCard` / 业务卡** 中。
+7. **底部 `ChatSender`**：外层 `relative z-20 w-full flex-none px-[max(20px,var(--cui-padding-max))] pb-[var(--space-400)] pt-0`，与 `Schedule0422BusinessDrawer` 一致；`placeholder` 等与现有业务入口抽屉对齐。
+
+## 禁止
+
+- 仅用 `SheetHeader` + `SheetTitle` 作为抽屉顶栏替代 `ChatNavBar`（除非产品明确为「非 CUI 的配置侧滑层」且与对话无关）。
+- 省略 `ScrollArea` / 底部 `ChatSender` 导致「只有表单、没有对话壳」的 CUI 抽屉。
+
+## 参考文件
+
+- `src/components/schedule-0422/Schedule0422BusinessDrawer.tsx`
+- `src/components/invite-0421/Invite0421MessageModule.tsx`（`Sheet` 抽屉段）
+- `src/constants/chatBusinessEntryDrawer.ts`

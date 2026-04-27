@@ -13,6 +13,7 @@ interface CreateOrgSuccessCardProps {
   phone: string;
   description: string;
   memberCount: number;
+  titleBelowAccessory?: React.ReactNode;
 }
 
 export function CreateOrgSuccessCard({
@@ -25,18 +26,18 @@ export function CreateOrgSuccessCard({
   email,
   phone,
   description,
-  memberCount
+  memberCount,
+  titleBelowAccessory,
 }: CreateOrgSuccessCardProps) {
   return (
     <GenericCard
-      title={
-        <div className="flex items-center gap-[var(--space-200)]">
-          <CheckCircle2 className="size-[20px] text-success shrink-0" />
-          <span>组织创建成功</span>
-        </div>
-      }
-      description={`恭喜！企业/组织「${orgName}」已成功创建，您已自动切换到该组织。作为创建者，您拥有该组织的全部管理权限。`}
+      title="组织创建成功"
+      titleSuffix={<CheckCircle2 className="size-[length:var(--space-500)] shrink-0 text-success" aria-hidden />}
+      titleBelowAccessory={titleBelowAccessory}
     >
+      <p className="m-0 text-[length:var(--font-size-base)] text-text-secondary leading-relaxed">
+        {`恭喜！企业/组织「${orgName}」已成功创建，您已自动切换到该组织。作为创建者，您拥有该组织的全部管理权限。`}
+      </p>
       <div className="flex flex-col gap-[var(--space-400)] mt-[var(--space-400)]">
         {/* 组织基本信息 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-[var(--space-300)] p-[var(--space-400)] bg-[var(--black-alpha-11)] rounded-[var(--radius-200)] border border-border">

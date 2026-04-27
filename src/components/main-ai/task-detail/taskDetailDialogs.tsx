@@ -87,11 +87,11 @@ export function MeetingHoverTrigger({
 }
 
 const SHARE_CONTACTS = [
-  { id: "c1", name: "殷朝 (我)", seed: "yin" },
-  { id: "c2", name: "费照君", seed: "fei" },
-  { id: "c3", name: "李静", seed: "li" },
-  { id: "c4", name: "段鹏", seed: "duan" },
-  { id: "c5", name: "王敏", seed: "wang" },
+  { id: "c1", name: "张三 (我)", seed: "zhang" },
+  { id: "c2", name: "李四", seed: "li" },
+  { id: "c3", name: "王五", seed: "wang" },
+  { id: "c4", name: "张三（协作）", seed: "zhang-xie" },
+  { id: "c5", name: "李四（审批）", seed: "li-shen" },
 ];
 
 export function ShareTaskDialog({

@@ -434,7 +434,7 @@ export function HandoverTaskCard({
               <SelectValue placeholder="请选择" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="殷朝">{DEMO_CURRENT_USER}</SelectItem>
+              <SelectItem value="张三">{DEMO_CURRENT_USER}</SelectItem>
               <SelectItem value="段鹏">段鹏</SelectItem>
             </SelectContent>
           </Select>

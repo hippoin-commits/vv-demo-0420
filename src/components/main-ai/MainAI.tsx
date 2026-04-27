@@ -30,6 +30,7 @@ import {
 import { getDemoNavBarTitle } from "../../constants/demoHomeNavEntries"
 import { InteractionRulesChangelogLauncher } from "./InteractionRulesChangelogDialog"
 import { InteractionRulesDocShell } from "./InteractionRulesDocShell"
+import { InteractionRulesImFrameworkModule } from "./InteractionRulesImFrameworkModule"
 import type { DemoInstructionCommand } from "./demoInstructionTypes"
 import {
   DropdownMenu,
@@ -174,6 +175,8 @@ export function MainAI(props: {
     React.useState(0)
   const [interactionRulesMainAiOrgDemoNonce, setInteractionRulesMainAiOrgDemoNonce] =
     React.useState(0)
+  const [interactionRulesImFrameworkDemoActive, setInteractionRulesImFrameworkDemoActive] =
+    React.useState(false)
 
   const clearInvite0421ShellGateRequest = React.useCallback(() => {
     setInvite0421ShellGateRequest(null)
@@ -201,13 +204,11 @@ export function MainAI(props: {
     [],
   )
 
-  const handlePrimaryNavChange = React.useCallback(
-    (id: VVAppShellPrimaryNavId) => {
-      setPrimaryNavId(id)
-      setShortcutId(null)
-    },
-    [],
-  )
+  const handlePrimaryNavChange = React.useCallback((id: VVAppShellPrimaryNavId) => {
+    setPrimaryNavId(id)
+    setShortcutId(null)
+    if (id !== "message") setInteractionRulesImFrameworkDemoActive(false)
+  }, [])
 
   const conversationList = is0419 ? conv0419 : conversations
   const selectedConversation =
@@ -294,19 +295,27 @@ export function MainAI(props: {
     (cmd: DemoInstructionCommand) => {
       switch (cmd.kind) {
         case "prefillNaturalDialogDemo":
+          setInteractionRulesImFrameworkDemoActive(false)
           setPrimaryNavId("ai")
           setShortcutId(null)
           setInteractionRulesNaturalDialogDemoNonce((n) => n + 1)
           break
         case "prefillBusinessCardCommandDemo":
+          setInteractionRulesImFrameworkDemoActive(false)
           setPrimaryNavId("ai")
           setShortcutId(null)
           setInteractionRulesBusinessCardDemoNonce((n) => n + 1)
           break
         case "showMainAiOrgManagementSwitcherDemo":
+          setInteractionRulesImFrameworkDemoActive(false)
           setPrimaryNavId("ai")
           setShortcutId(null)
           setInteractionRulesMainAiOrgDemoNonce((n) => n + 1)
+          break
+        case "openImFrameworkDemo":
+          setPrimaryNavId("message")
+          setShortcutId(null)
+          setInteractionRulesImFrameworkDemoActive(true)
           break
       }
     },
@@ -376,6 +385,10 @@ export function MainAI(props: {
           organizationManagement0425Demo={organizationManagement0425Demo}
           organizationManagement0425CommandNonce={organizationManagement0425CommandNonce}
         />
+      ) : primaryNavId === "message" &&
+        demoInstructionShell &&
+        interactionRulesImFrameworkDemoActive ? (
+        <InteractionRulesImFrameworkModule />
       ) : primaryNavId === "message" && invite0421NewUserFlow ? (
         <Invite0421MessageModule
           hasOrganization={hasOrganization}

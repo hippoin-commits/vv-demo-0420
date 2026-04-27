@@ -17,6 +17,8 @@ interface CreateFamilyEducationSpaceCardProps {
   defaultStudentName?: string;
   onSubmit: (data: CreateFamilyEducationSpaceData) => void;
   onCancel?: () => void;
+  /** 主 AI：表单卡标题下教育空间切换 */
+  mainAiTitleBelowAccessory?: React.ReactNode;
 }
 
 /**
@@ -27,6 +29,7 @@ interface CreateFamilyEducationSpaceCardProps {
 export function CreateFamilyEducationSpaceCard({
   defaultStudentName = "",
   onSubmit,
+  mainAiTitleBelowAccessory,
 }: CreateFamilyEducationSpaceCardProps) {
   const [identity, setIdentity] = React.useState<FamilyEducationIdentity | null>(null);
   const [parentChildName, setParentChildName] = React.useState("");
@@ -100,6 +103,7 @@ export function CreateFamilyEducationSpaceCard({
         <GenericFormCard
           title="创建教育空间"
           icon={<SquarePlus className="w-[18px] h-[18px]" />}
+          titleBelowAccessory={mainAiTitleBelowAccessory}
           onSubmit={handleSubmit}
           onReset={handleReset}
           submitText="确认创建"

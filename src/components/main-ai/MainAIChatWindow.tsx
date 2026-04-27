@@ -65,7 +65,7 @@ import { getTaskDraftById } from "./taskDraftStorage";
 import type { ExecutionContentValues } from "./task-detail/ExecutionContentDrawer";
 import type { TaskFormSnapshot } from "./task-detail/TaskFormFields";
 
-import { AppIcon } from './AppIcon';
+import { AppDockEntryIcon, AppIcon } from './AppIcon';
 import { ChatNavBar, type EducationSpaceNode } from "../chat/ChatNavBar"
 import { AssistantChatBubble, ChatWelcome } from "../chat/ChatWelcome"
 import { ChatScrollToBottomFab } from "../chat/ChatScrollToBottomFab"
@@ -182,7 +182,11 @@ import {
   ORGANIZATION_MANAGEMENT_0425_USER_TRIGGER,
 } from "../../constants/organizationManagement0425"
 import { OrganizationManagementCard0425 } from "./organization-management-0425/OrganizationManagementCard0425"
-import { InteractionRulesOrgSelectBar } from "./InteractionRulesOrgSelectBar"
+import { OrganizationPermissionApplySection0425 } from "./organization-management-0425/OrganizationPermissionApplySection0425"
+import {
+  MainAiCardEducationSpaceSelectBar,
+  MainAiCardOrgScopeSelectBar,
+} from "./main-ai-card-scope/MainAiCardTitleScopeSwitcher"
 
 import aiModelIcon from "../../assets/f165fadc65db69eb9ce3d5feeb2f6b4dc2638bd6.png";
 import educationIcon from "../../assets/8449365f45bb140bf269f6769f74387249864ed8.png";
@@ -202,7 +206,7 @@ import membersIcon from "../../assets/ecb04190c46a6ecd790d2bc345d963ba9a4a8f0b.p
 import financeIcon from "../../assets/98e154a19d1590d43b04308d53726a30a29e972b.png";
 import orgIcon from "../../assets/58a97c06b4ae6edfc613d20add2fb4ead0363c64.png";
 
-import { Calculator, BookA, PenTool, Users, ArrowLeft, MoreHorizontal, Briefcase, ShoppingBag, DollarSign, GripHorizontal, ChevronDown, Boxes, Package, Upload, BadgeDollarSign, Clock, CalendarCheck, BarChart3, UserCog, Receipt, History, PieChart, BookOpen, ShoppingCart, GraduationCap, UserCheck, TrendingUp, TrendingDown, Landmark, FileSpreadsheet, PanelLeft, Square, X, AppWindow, Maximize2, ListTodo, List, UsersRound, UserPlus, Filter, Settings, Bell, Inbox, Send, User, PenLine, Building2, Search, Info } from "lucide-react"
+import { Calculator, BookA, PenTool, Users, ArrowLeft, MoreHorizontal, Briefcase, ShoppingBag, DollarSign, GripHorizontal, ChevronDown, Boxes, Package, Upload, BadgeDollarSign, Clock, CalendarCheck, BarChart3, UserCog, Receipt, History, PieChart, BookOpen, ShoppingCart, GraduationCap, UserCheck, TrendingUp, TrendingDown, Landmark, FileSpreadsheet, PanelLeft, Square, X, AppWindow, Maximize2, ListTodo, List, UsersRound, UserPlus, Filter, Settings, Bell, Inbox, Send, User, PenLine, Building2, Search, Info, FileText, LayoutGrid } from "lucide-react"
 import { toast } from "sonner"
 import { motion, AnimatePresence, useDragControls } from "motion/react"
 import { usePopper } from "react-popper"
@@ -348,6 +352,7 @@ const MAIL_APP_DOCK_ITEM: AppItem = {
   name: "邮箱",
   icon: {
     imageSrc: profileIcon,
+    /** 仍用位图；`AppDockEntryIcon` 仅对 `docs` 等少数类型走矢量应用入口样式 */
     iconType: "mail",
   },
   order: 0,
@@ -493,7 +498,7 @@ interface MainAIChatWindowProps {
    */
   interactionRulesBusinessCardDemoNonce?: number
   /**
-   * 交互规范文档「3.2」：递增时在主 AI 插入 0425 组织管理卡，并在卡外展示与顶栏一致的组织切换条（无创建/加入）。
+   * 交互规范文档「3.2」：递增时在主 AI 插入 0425 组织管理卡；默认在卡片内标题下展示组织切换（方案1），可通过行动建议切换为卡外左对齐切换条（方案2）。
    */
   interactionRulesMainAiOrgDemoNonce?: number
   /** 「交互规范文档 - 持续更新中」页：为 true 时启用文档页专用新一轮槽位高度策略（见 `armNewRoundForUserSend`） */
@@ -526,6 +531,8 @@ const CREATE_ORG_FORM_MARKER = "<<<RENDER_CREATE_ORG_FORM>>>"
 const CREATE_ORG_SUCCESS_MARKER = "<<<RENDER_CREATE_ORG_SUCCESS>>>"
 const JOIN_ORG_FORM_MARKER = "<<<RENDER_JOIN_ORG_FORM>>>"
 const JOIN_ORG_CONFIRM_MARKER = "<<<RENDER_JOIN_ORG_CONFIRM>>>"
+const ORG_EMPLOYEE_PERMISSION_GUIDE_0425_MARKER = "<<<RENDER_ORG_EMPLOYEE_PERMISSION_GUIDE_0425>>>"
+const ORG_SETTINGS_PERMISSION_0425_MARKER = "<<<RENDER_ORG_SETTINGS_PERMISSION_0425>>>"
 /** 创建机构教育空间表单 */
 const CREATE_INSTITUTION_EDU_SPACE_MARKER = "<<<RENDER_CREATE_INSTITUTION_EDU_SPACE_FORM>>>"
 /** 创建家庭教育空间流程（身份选择 + 表单一体卡） */
@@ -624,11 +631,13 @@ function Invite0421OrgEmployeeOnboardInChat({
   onBasicInfoSubmitted,
   assistantAvatarSrc,
   hideAvatar,
+  basicInfoTitleBelowAccessory,
 }: {
   /** 用户点击「确定」后：仅冻结表单并展示成功气泡；不切换有组织壳层（演示入组见顶栏按钮） */
   onBasicInfoSubmitted?: () => void;
   assistantAvatarSrc: string;
   hideAvatar: boolean;
+  basicInfoTitleBelowAccessory?: React.ReactNode;
 }) {
   const [frozen, setFrozen] = React.useState(false);
   return (
@@ -645,6 +654,7 @@ function Invite0421OrgEmployeeOnboardInChat({
           <AssistantChatBubble>{Invite0421OrgEmployeeOnboardingIntroText()}</AssistantChatBubble>
           <Invite0421OrgEmployeeBasicInfoForm
             frozen={frozen}
+            titleBelowAccessory={basicInfoTitleBelowAccessory}
             onSubmit={() => {
               setFrozen(true);
               onBasicInfoSubmitted?.();
@@ -839,6 +849,15 @@ const SWITCH_ORG_COMMANDS = [
   "switch organization",
   "组织切换"
 ]
+
+const EMPLOYEE_PERMISSION_APPLY_COMMANDS_0425 = [
+  "员工管理",
+  "添加员工",
+  "编辑员工",
+  "员工权限",
+  "申请权限",
+];
+const ORG_SETTINGS_COMMANDS_0425 = ["组织设置", "组织应用设置", "组织配置"];
 
 // 可用模型列表
 const AVAILABLE_MODELS = [
@@ -1086,58 +1105,6 @@ const FAMILY_EDUCATION_APPS = [
   },
 ]
 
-const ORGANIZATION_0425_APPS: SecondaryAppButtonApp[] = [
-  {
-    id: "org_structure",
-    name: "组织架构",
-    imageSrc: organizationIcon,
-    menu: [],
-    directClick: true,
-  },
-  {
-    id: "org_management",
-    name: "组织管理",
-    imageSrc: orgIcon,
-    menu: [],
-    directClick: true,
-  },
-  {
-    id: "post_management",
-    name: "岗位管理",
-    imageSrc: employeeIcon,
-    menu: [],
-    directClick: true,
-  },
-  {
-    id: "rank_management",
-    name: "职级管理",
-    imageSrc: recruitmentIcon,
-    menu: [],
-    directClick: true,
-  },
-  {
-    id: "position_management",
-    name: "职位管理",
-    imageSrc: profileIcon,
-    menu: [],
-    directClick: true,
-  },
-  {
-    id: "salary_quantile",
-    name: "薪酬分位",
-    imageSrc: salaryIcon,
-    menu: [],
-    directClick: true,
-  },
-  {
-    id: "org_settings",
-    name: "组织设置",
-    imageSrc: companyIcon,
-    menu: [],
-    directClick: true,
-  },
-]
-
 function EducationMenuIcon({ iconKey }: { iconKey: string }) {
   if (iconKey === 'fulfillment') {
     return (
@@ -1214,10 +1181,215 @@ type SecondaryAppButtonApp = {
   id: string;
   name: string;
   imageSrc: string;
+  /** 组织应用等需要用浅底深色前景的应用内图标时传入；未传入时沿用图片图标 */
+  iconNode?: React.ReactNode;
+  /**
+   * 应用内子入口（主 AI / 应用 AI 底栏除「返回」「应用切换」外）：浅色底 + 同系深色图标。
+   * 未传且存在 iconNode 时按 neutral（灰底）处理。
+   */
+  subEntryTint?: "neutral" | "orange" | "blue" | "green" | "brand";
   menu: Array<{ id?: string; name: string; iconKey?: string }>;
   /** 无二级菜单：主按钮单次点击即回调（如任务「筛选」「设置」） */
   directClick?: boolean;
 };
+
+type MailDockRow = (typeof MAIL_DOCK_APPS)[number];
+
+function mapMailDockRowToSecondaryApp(row: MailDockRow): SecondaryAppButtonApp {
+  const base: SecondaryAppButtonApp = {
+    id: row.id,
+    name: row.name,
+    imageSrc: row.imageSrc,
+    menu: row.menu,
+    directClick: "directClick" in row ? Boolean((row as { directClick?: boolean }).directClick) : undefined,
+  };
+  switch (row.id) {
+    case "mail_send_receive":
+      return {
+        ...base,
+        iconNode: <FileText className="size-[13px]" strokeWidth={2} />,
+        subEntryTint: "orange",
+      };
+    case "mail_my":
+      return {
+        ...base,
+        iconNode: <User className="size-[13px]" strokeWidth={2} />,
+        subEntryTint: "orange",
+      };
+    case "mail_business":
+      return {
+        ...base,
+        iconNode: <Users className="size-[13px]" strokeWidth={2} />,
+        subEntryTint: "blue",
+      };
+    case "mail_settings":
+      return {
+        ...base,
+        iconNode: <Settings className="size-[13px]" strokeWidth={2} />,
+        subEntryTint: "green",
+      };
+    case "mail_admin":
+      return {
+        ...base,
+        iconNode: <Building2 className="size-[13px]" strokeWidth={2} />,
+        subEntryTint: "blue",
+      };
+    default:
+      return base;
+  }
+}
+
+function enrichTaskAppForDock(app: (typeof TASK_APPS)[number]): SecondaryAppButtonApp {
+  const base: SecondaryAppButtonApp = {
+    id: app.id,
+    name: app.name,
+    imageSrc: app.imageSrc,
+    menu: app.menu,
+    directClick: app.directClick,
+  };
+  switch (app.id) {
+    case "task_overview":
+      return {
+        ...base,
+        iconNode: <FileText className="size-[13px]" strokeWidth={2} />,
+        subEntryTint: "orange",
+      };
+    case "task_mine":
+      return {
+        ...base,
+        iconNode: <LayoutGrid className="size-[13px]" strokeWidth={2} />,
+        subEntryTint: "green",
+      };
+    case "task_new":
+      return {
+        ...base,
+        iconNode: <Users className="size-[13px]" strokeWidth={2} />,
+        subEntryTint: "blue",
+      };
+    case "task_filter":
+      return {
+        ...base,
+        iconNode: <Filter className="size-[13px]" strokeWidth={2} />,
+        subEntryTint: "green",
+      };
+    case "task_settings":
+      return {
+        ...base,
+        iconNode: <Settings className="size-[13px]" strokeWidth={2} />,
+        subEntryTint: "blue",
+      };
+    default:
+      return base;
+  }
+}
+
+const TASK_DOCK_SECONDARY_APPS: SecondaryAppButtonApp[] = TASK_APPS.map(enrichTaskAppForDock);
+
+const ORGANIZATION_0425_APPS: SecondaryAppButtonApp[] = [
+  {
+    id: "org_structure",
+    name: "组织架构",
+    imageSrc: organizationIcon,
+    iconNode: <UsersRound className="size-[13px]" strokeWidth={1.8} />,
+    subEntryTint: "brand",
+    menu: [],
+    directClick: true,
+  },
+  {
+    id: "org_management",
+    name: "组织管理",
+    imageSrc: orgIcon,
+    iconNode: <Building2 className="size-[13px]" strokeWidth={1.8} />,
+    subEntryTint: "brand",
+    menu: [],
+    directClick: true,
+  },
+  {
+    id: "post_management",
+    name: "岗位管理",
+    imageSrc: employeeIcon,
+    iconNode: <Briefcase className="size-[13px]" strokeWidth={1.8} />,
+    subEntryTint: "brand",
+    menu: [],
+    directClick: true,
+  },
+  {
+    id: "rank_management",
+    name: "职级管理",
+    imageSrc: recruitmentIcon,
+    iconNode: <TrendingUp className="size-[13px]" strokeWidth={1.8} />,
+    subEntryTint: "brand",
+    menu: [],
+    directClick: true,
+  },
+  {
+    id: "position_management",
+    name: "职位管理",
+    imageSrc: profileIcon,
+    iconNode: <UserCog className="size-[13px]" strokeWidth={1.8} />,
+    subEntryTint: "brand",
+    menu: [],
+    directClick: true,
+  },
+  {
+    id: "salary_quantile",
+    name: "薪酬分位",
+    imageSrc: salaryIcon,
+    iconNode: <DollarSign className="size-[13px]" strokeWidth={1.8} />,
+    subEntryTint: "brand",
+    menu: [],
+    directClick: true,
+  },
+  {
+    id: "org_settings",
+    name: "组织设置",
+    imageSrc: companyIcon,
+    iconNode: <Settings className="size-[13px]" strokeWidth={1.8} />,
+    subEntryTint: "brand",
+    menu: [],
+    directClick: true,
+  },
+];
+
+/** 0425 演示：员工应用内底栏快捷入口（浅底深标，与组织应用底栏一致模式） */
+const EMPLOYEE_0425_APPS: SecondaryAppButtonApp[] = [
+  {
+    id: "emp_permission_apply",
+    name: "权限申请",
+    imageSrc: employeeIcon,
+    iconNode: <UserCheck className="size-[13px]" strokeWidth={1.8} />,
+    subEntryTint: "brand",
+    menu: [],
+    directClick: true,
+  },
+  {
+    id: "emp_roster",
+    name: "花名册",
+    imageSrc: profileIcon,
+    iconNode: <UsersRound className="size-[13px]" strokeWidth={1.8} />,
+    subEntryTint: "blue",
+    menu: [],
+    directClick: true,
+  },
+  {
+    id: "emp_onboard",
+    name: "入职办理",
+    imageSrc: recruitmentIcon,
+    iconNode: <UserPlus className="size-[13px]" strokeWidth={1.8} />,
+    subEntryTint: "green",
+    menu: [],
+    directClick: true,
+  },
+  {
+    id: "emp_attendance",
+    name: "考勤统计",
+    imageSrc: calendarIcon,
+    iconNode: <Clock className="size-[13px]" strokeWidth={1.8} />,
+    subEntryTint: "orange",
+    menu: [],
+    directClick: true,
+  },
+];
 
 function SecondaryAppButton({
   app,
@@ -1335,7 +1507,23 @@ function SecondaryAppButton({
           isDirect && "hover:bg-[var(--black-alpha-11)]"
         )}
       >
-        <AppIcon imageSrc={app.imageSrc} className="w-[18px] h-[18px]" />
+        {app.iconNode ? (
+          <span
+            className={cn(
+              "flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[var(--radius-sm)] transition-colors",
+              app.subEntryTint === "orange" && "bg-[var(--orange-alpha-11)] text-[var(--orange-10)]",
+              app.subEntryTint === "blue" && "bg-[var(--blue-alpha-11)] text-primary",
+              app.subEntryTint === "green" && "bg-[var(--green-alpha-11)] text-success",
+              app.subEntryTint === "brand" && "bg-primary/10 text-primary",
+              (!app.subEntryTint || app.subEntryTint === "neutral") &&
+                "bg-bg-secondary text-text-secondary group-hover/btn:bg-[var(--black-alpha-11)] group-hover/btn:text-text",
+            )}
+          >
+            {app.iconNode}
+          </span>
+        ) : (
+          <AppIcon imageSrc={app.imageSrc} className="w-[18px] h-[18px]" />
+        )}
         <p className="text-[length:var(--font-size-xs)] leading-none text-[var(--color-text)] whitespace-nowrap font-[var(--font-weight-medium)]">
           {app.name}
         </p>
@@ -1626,10 +1814,6 @@ export function MainAIChatWindow({
   >(null)
   const [interactionRulesOrgCardResetKey, setInteractionRulesOrgCardResetKey] = React.useState(0)
   const lastInteractionRulesOrgSwitcherDemoNonceRef = React.useRef(0)
-  const [interactionRulesOrg0425SwitcherPlacement, setInteractionRulesOrg0425SwitcherPlacement] = React.useState<
-    "external" | "internal"
-  >("external");
-  const interactionRulesOrg0425PendingScheme2Ref = React.useRef(false);
   const scrollRef = React.useRef<HTMLDivElement>(null)
   /** 当前列表最后一条消息的外层容器，用于新卡片打开时滚至卡片顶部对齐视口 */
   const latestMessageRowRef = React.useRef<HTMLDivElement>(null)
@@ -2107,37 +2291,65 @@ export function MainAIChatWindow({
   const switcherCurrentApp = React.useMemo(() => {
     if (activeApp === "education") {
       const a = apps.find((x) => x.id === "education") ?? INITIAL_APPS.find((x) => x.id === "education");
-      return a ? { name: a.name, imageSrc: a.icon.imageSrc ?? "" } : undefined;
+      return a
+        ? { name: a.name, imageSrc: a.icon.imageSrc ?? "", iconType: a.icon.iconType }
+        : undefined;
     }
     if (activeApp === "task") {
       const a = apps.find((x) => x.id === "task") ?? INITIAL_APPS.find((x) => x.id === "task");
-      return a ? { name: a.name, imageSrc: a.icon.imageSrc ?? "" } : undefined;
+      return a
+        ? { name: a.name, imageSrc: a.icon.imageSrc ?? "", iconType: a.icon.iconType }
+        : undefined;
     }
     if (activeApp === "mail") {
-      return { name: MAIL_APP_DOCK_ITEM.name, imageSrc: MAIL_APP_DOCK_ITEM.icon.imageSrc ?? "" };
+      return {
+        name: MAIL_APP_DOCK_ITEM.name,
+        imageSrc: MAIL_APP_DOCK_ITEM.icon.imageSrc ?? "",
+        iconType: MAIL_APP_DOCK_ITEM.icon.iconType,
+      };
     }
     if (activeApp === "schedule") {
       const a = apps.find((x) => x.id === "schedule") ?? INITIAL_APPS.find((x) => x.id === "schedule");
-      return a ? { name: a.name, imageSrc: a.icon.imageSrc ?? "" } : undefined;
+      return a
+        ? { name: a.name, imageSrc: a.icon.imageSrc ?? "", iconType: a.icon.iconType }
+        : undefined;
     }
     if (activeApp === "organization") {
       const a = apps.find((x) => x.id === "organization") ?? INITIAL_APPS.find((x) => x.id === "organization");
-      return a ? { name: a.name, imageSrc: a.icon.imageSrc ?? "" } : undefined;
+      return a
+        ? { name: a.name, imageSrc: a.icon.imageSrc ?? "", iconType: a.icon.iconType }
+        : undefined;
+    }
+    if (activeApp === "employee") {
+      const a = apps.find((x) => x.id === "employee") ?? INITIAL_APPS.find((x) => x.id === "employee");
+      return a
+        ? { name: a.name, imageSrc: a.icon.imageSrc ?? "", iconType: a.icon.iconType }
+        : undefined;
     }
     if (activeApp === "todo") {
       const a = apps.find((x) => x.id === "todo") ?? INITIAL_APPS.find((x) => x.id === "todo");
-      return a ? { name: a.name, imageSrc: a.icon.imageSrc ?? "" } : undefined;
+      return a
+        ? { name: a.name, imageSrc: a.icon.imageSrc ?? "", iconType: a.icon.iconType }
+        : undefined;
     }
     if (activeApp === "meeting") {
       const a = apps.find((x) => x.id === "meeting") ?? INITIAL_APPS.find((x) => x.id === "meeting");
-      return a ? { name: a.name, imageSrc: a.icon.imageSrc ?? "" } : undefined;
+      return a
+        ? { name: a.name, imageSrc: a.icon.imageSrc ?? "", iconType: a.icon.iconType }
+        : undefined;
     }
     if (activeApp === "disk") {
       const a = apps.find((x) => x.id === "disk") ?? INITIAL_APPS.find((x) => x.id === "disk");
-      return a ? { name: a.name, imageSrc: a.icon.imageSrc ?? "" } : undefined;
+      return a
+        ? { name: a.name, imageSrc: a.icon.imageSrc ?? "", iconType: a.icon.iconType }
+        : undefined;
     }
     if (activeApp === "docs") {
-      return { name: DOCS_APP_DOCK_ITEM.name, imageSrc: DOCS_APP_DOCK_ITEM.icon.imageSrc ?? "" };
+      return {
+        name: DOCS_APP_DOCK_ITEM.name,
+        imageSrc: DOCS_APP_DOCK_ITEM.icon.imageSrc ?? "",
+        iconType: DOCS_APP_DOCK_ITEM.icon.iconType,
+      };
     }
     return undefined;
   }, [activeApp, apps]);
@@ -2406,6 +2618,7 @@ export function MainAIChatWindow({
       const opensPrimarySurface =
         appId === "education" ||
         appId === "task" ||
+        (organizationManagement0425Demo && appId === "employee") ||
         dockMail ||
         (organizationManagement0425Demo && appId === "organization") ||
         (schedule0422DrawerDemo && appId === "schedule") ||
@@ -2626,6 +2839,11 @@ export function MainAIChatWindow({
     [taskEntryVariant]
   );
 
+  const mailSecondaryDockApps = React.useMemo(
+    () => mailDockApps.map(mapMailDockRowToSecondaryApp),
+    [mailDockApps],
+  );
+
   const appendMailAssistantMessage = React.useCallback(
     (msg: Message) => {
       updateMailMessages((prev) => [...prev, msg]);
@@ -2826,8 +3044,6 @@ export function MainAIChatWindow({
     setInvite0421EmployeeAwaitingDemoApproval(false);
     setInteractionRulesOrgCardMessageId(null);
     setInteractionRulesOrgCardResetKey(0);
-    setInteractionRulesOrg0425SwitcherPlacement("external");
-    interactionRulesOrg0425PendingScheme2Ref.current = false;
   }, [conversation.id, invite0421DockFlow, is0419Explore]);
 
   /**
@@ -3090,8 +3306,6 @@ export function MainAIChatWindow({
     setSchedule0422DrawerOpen(false);
     setSecondaryHistoryOpen(false);
     setInteractionRulesOrgCardResetKey(0);
-    setInteractionRulesOrg0425SwitcherPlacement("external");
-    interactionRulesOrg0425PendingScheme2Ref.current = false;
 
     const now = Date.now();
     const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -3123,36 +3337,6 @@ export function MainAIChatWindow({
     beginNewUserChatRound,
     conversation.user.id,
   ]);
-
-  React.useEffect(() => {
-    if (!interactionRulesOrgNavDemo) return;
-    if (!interactionRulesOrg0425PendingScheme2Ref.current) return;
-    if (messages.length > 0) return;
-    interactionRulesOrg0425PendingScheme2Ref.current = false;
-
-    const now = Date.now();
-    const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    const botId = `org-management-0425-bot-${now}`;
-    setInteractionRulesOrgCardMessageId(botId);
-    beginNewUserChatRound("main");
-    setMessages([
-      {
-        id: `org-management-0425-user-${now}`,
-        senderId: currentUser.id,
-        content: ORGANIZATION_MANAGEMENT_0425_USER_TRIGGER,
-        timestamp: ts,
-        createdAt: now,
-      },
-      {
-        id: botId,
-        senderId: conversation.user.id,
-        content: ORGANIZATION_MANAGEMENT_0425_MARKER,
-        timestamp: ts,
-        createdAt: now + 1,
-        isAfterPrompt: true,
-      },
-    ]);
-  }, [messages.length, interactionRulesOrgNavDemo, beginNewUserChatRound, conversation.user.id]);
 
   const handleSendMessage = () => {
     if (!inputValue.trim()) return
@@ -3359,8 +3543,16 @@ export function MainAIChatWindow({
       inputValue.includes(PERMISSION_EDIT_CARD_0424_USER_TRIGGER)
     const isOrganizationManagement0425UserCommand =
       organizationManagement0425Demo &&
-      (activeApp === null || activeApp === "organization") &&
+      (activeApp === null || activeApp === "organization" || activeApp === "employee") &&
       inputValue.includes(ORGANIZATION_MANAGEMENT_0425_USER_TRIGGER)
+    const isEmployeePermissionGuide0425UserCommand =
+      organizationManagement0425Demo &&
+      (activeApp === null || activeApp === "employee") &&
+      EMPLOYEE_PERMISSION_APPLY_COMMANDS_0425.some((kw) => inputValue.includes(kw))
+    const isOrgSettingsPermission0425UserCommand =
+      organizationManagement0425Demo &&
+      (activeApp === null || activeApp === "organization" || activeApp === "employee") &&
+      ORG_SETTINGS_COMMANDS_0425.some((kw) => inputValue.includes(kw))
     const hadNaturalDialogArm =
       activeApp === null && interactionRulesNaturalDialogArmRef.current
     const shouldPlayNaturalDialogDemo =
@@ -3371,7 +3563,9 @@ export function MainAIChatWindow({
       !isJoinOrgCommand &&
       !isSwitchOrgCommand &&
       !isPermissionEdit0424UserCommand &&
-      !isOrganizationManagement0425UserCommand
+      !isOrganizationManagement0425UserCommand &&
+      !isEmployeePermissionGuide0425UserCommand &&
+      !isOrgSettingsPermission0425UserCommand
     if (hadNaturalDialogArm) {
       interactionRulesNaturalDialogArmRef.current = false
     }
@@ -3464,6 +3658,34 @@ export function MainAIChatWindow({
       }
       setTimeout(() => {
         setMessages((prev) => [...prev, orgMgmtMsg])
+      }, 500)
+    } else if (isEmployeePermissionGuide0425UserCommand) {
+      const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      const now = Date.now()
+      const guideMsg: Message = {
+        id: `employee-permission-guide-0425-${now}`,
+        senderId: conversation.user.id,
+        content: ORG_EMPLOYEE_PERMISSION_GUIDE_0425_MARKER,
+        timestamp: ts,
+        createdAt: now,
+        isAfterPrompt: true,
+      }
+      setTimeout(() => {
+        setMessages((prev) => [...prev, guideMsg])
+      }, 500)
+    } else if (isOrgSettingsPermission0425UserCommand) {
+      const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      const now = Date.now()
+      const orgSettingMsg: Message = {
+        id: `org-settings-0425-${now}`,
+        senderId: conversation.user.id,
+        content: ORG_SETTINGS_PERMISSION_0425_MARKER,
+        timestamp: ts,
+        createdAt: now,
+        isAfterPrompt: true,
+      }
+      setTimeout(() => {
+        setMessages((prev) => [...prev, orgSettingMsg])
       }, 500)
     }
 
@@ -3577,6 +3799,40 @@ export function MainAIChatWindow({
         content: ORGANIZATION_MANAGEMENT_0425_MARKER,
         timestamp: ts,
         createdAt: now + 1,
+        isAfterPrompt: true,
+      },
+    ]);
+  }, [beginNewUserChatRound, conversation.user.id]);
+
+  const appendEmployeePermissionGuide0425Card = React.useCallback(() => {
+    beginNewUserChatRound("main");
+    const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const now = Date.now();
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `employee-permission-guide-0425-${now}`,
+        senderId: conversation.user.id,
+        content: ORG_EMPLOYEE_PERMISSION_GUIDE_0425_MARKER,
+        timestamp: ts,
+        createdAt: now,
+        isAfterPrompt: true,
+      },
+    ]);
+  }, [beginNewUserChatRound, conversation.user.id]);
+
+  const appendOrgSettingsPermission0425Card = React.useCallback(() => {
+    beginNewUserChatRound("main");
+    const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const now = Date.now();
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `org-settings-0425-${now}`,
+        senderId: conversation.user.id,
+        content: ORG_SETTINGS_PERMISSION_0425_MARKER,
+        timestamp: ts,
+        createdAt: now,
         isAfterPrompt: true,
       },
     ]);
@@ -4052,31 +4308,15 @@ export function MainAIChatWindow({
       on0419NewSession();
       return;
     }
-    if (interactionRulesOrgNavDemo && !interactionRulesOrg0425PendingScheme2Ref.current) {
+    if (interactionRulesOrgNavDemo) {
       setInteractionRulesOrgCardMessageId(null);
-      setInteractionRulesOrg0425SwitcherPlacement("external");
-      interactionRulesOrg0425PendingScheme2Ref.current = false;
+      setInteractionRulesOrgCardResetKey(0);
     }
     setMessages([]);
     setNewRoundSlot(null);
     newRoundScrollAppliedRef.current = false;
     sameRoundScrollSuppressRef.current = null;
   };
-
-  const handleInteractionRulesOrg0425Scheme2Demo = React.useCallback(() => {
-    if (!interactionRulesOrgNavDemo) return;
-    interactionRulesOrg0425PendingScheme2Ref.current = true;
-    setInteractionRulesOrg0425SwitcherPlacement("internal");
-    setInteractionRulesOrgCardResetKey(0);
-    if (is0419Explore && on0419NewSession) {
-      on0419NewSession();
-      return;
-    }
-    setMessages([]);
-    setNewRoundSlot(null);
-    newRoundScrollAppliedRef.current = false;
-    sameRoundScrollSuppressRef.current = null;
-  }, [interactionRulesOrgNavDemo, is0419Explore, on0419NewSession]);
 
   const handleSecondaryAppNewConversation = () => {
     // Clear education messages for new conversation
@@ -4249,6 +4489,25 @@ export function MainAIChatWindow({
           ? ("mail" as const)
           : undefined;
 
+    const mainAiScopeEnabled = appContext === "main" && activeApp === null;
+    const mainAiOrgScopeBarEl = mainAiScopeEnabled ? (
+      <MainAiCardOrgScopeSelectBar
+        organizations={schedule0422NavOrganizations}
+        currentOrgId={currentOrg}
+        onOrgSelect={handleOrgSwitch}
+        embedded
+        hideTriggerOrgIcon
+        textTone="subtle"
+      />
+    ) : null;
+    const mainAiEducationScopeBarEl = mainAiScopeEnabled ? (
+      <MainAiCardEducationSpaceSelectBar
+        nodes={educationSpaceNodes}
+        value={currentEducationSpaceId}
+        onChange={setCurrentEducationSpaceId}
+      />
+    ) : null;
+
     if (appContext === "mail") {
       return (
         <MailChatLayer
@@ -4311,6 +4570,10 @@ export function MainAIChatWindow({
       const isCreateOrgSuccess = msg.content.startsWith(`${CREATE_ORG_SUCCESS_MARKER}:`);
       const isJoinOrgForm = msg.content === JOIN_ORG_FORM_MARKER;
       const isJoinOrgConfirm = msg.content.startsWith(`${JOIN_ORG_CONFIRM_MARKER}:`);
+      const isOrgEmployeePermissionGuide0425Card =
+        organizationManagement0425Demo && msg.content === ORG_EMPLOYEE_PERMISSION_GUIDE_0425_MARKER;
+      const isOrgSettingsPermission0425Card =
+        organizationManagement0425Demo && msg.content === ORG_SETTINGS_PERMISSION_0425_MARKER;
       const isSimpleCreateOrg0421 = msg.content === SIMPLE_CREATE_ORG_0421_MARKER;
       const isSimpleJoinOrg0421 = msg.content === SIMPLE_JOIN_ORG_0421_MARKER;
       const isInvite0421OrgEmployeeOnboard = msg.content === INVITE0421_ORG_EMPLOYEE_ONBOARD_MARKER;
@@ -4373,6 +4636,8 @@ export function MainAIChatWindow({
         isSchedule0422AllList ||
         isPermissionEdit0424Card ||
         isPermissionDetail0424Card ||
+        isOrgEmployeePermissionGuide0425Card ||
+        isOrgSettingsPermission0425Card ||
         isOrganizationManagement0425Card ||
         isGenericCard ||
         isInvite0421OrgEmployeeOnboard ||
@@ -4387,6 +4652,8 @@ export function MainAIChatWindow({
         isCreateOrgSuccess ||
         isJoinOrgForm ||
         isJoinOrgConfirm ||
+        isOrgEmployeePermissionGuide0425Card ||
+        isOrgSettingsPermission0425Card ||
         isSimpleCreateOrg0421 ||
         isSimpleJoinOrg0421 ||
         isInvite0421OrgEmployeeOnboard ||
@@ -5546,6 +5813,7 @@ export function MainAIChatWindow({
               operationSourceLabel={operationSourceLabel}
             >
               <PermissionEditCard0424
+                titleBelowAccessory={mainAiOrgScopeBarEl ?? undefined}
                 onScrollMutatedCardToTop={() => scrollInPlaceMutatedCardToTop(msg.id)}
                 onReplaceWithDetail={(payload: PermissionEditDetailPayload0424) => {
                   scrollInPlaceMutatedCardToTop(msg.id);
@@ -5572,7 +5840,12 @@ export function MainAIChatWindow({
                 try {
                   const raw = msg.content.slice(PERMISSION_DETAIL_CARD_0424_MARKER_PREFIX.length);
                   const payload = JSON.parse(raw) as PermissionEditDetailPayload0424;
-                  return <PermissionDetailCard0424 payload={payload} />;
+                  return (
+                    <PermissionDetailCard0424
+                      payload={payload}
+                      titleBelowAccessory={mainAiOrgScopeBarEl ?? undefined}
+                    />
+                  );
                 } catch {
                   return (
                     <div className="text-[length:var(--font-size-sm)] text-[color:var(--color-error)]">
@@ -5583,16 +5856,6 @@ export function MainAIChatWindow({
               })()}
             </TaskChatMessageRow>
           ) : isOrganizationManagement0425Card ? (
-            <>
-              {interactionRulesOrgNavDemo &&
-              interactionRulesOrg0425SwitcherPlacement === "external" &&
-              interactionRulesOrgCardMessageId === msg.id ? (
-                <InteractionRulesOrgSelectBar
-                  organizations={schedule0422NavOrganizations}
-                  currentOrgId={currentOrg}
-                  onOrgSelect={handleOrgSwitch}
-                />
-              ) : null}
               <TaskChatMessageRow
                 hideAvatar={hideAvatar}
                 avatarSrc={conversation.user.avatar}
@@ -5601,37 +5864,41 @@ export function MainAIChatWindow({
                 <div className="flex w-full min-w-0 flex-col gap-[var(--space-150)]">
                   <OrganizationManagementCard0425
                     key={`org0425-${msg.id}-${interactionRulesOrgCardResetKey}`}
+                    mainAiTitleBelowAccessory={mainAiOrgScopeBarEl ?? undefined}
                     organizationHeadline={
                       currentOrg !== NO_ORG_MESSAGE_SCOPE
                         ? schedule0422NavOrganizations.find((o) => o.id === currentOrg)?.name ??
                           currentOrg
                         : undefined
                     }
-                    titleBelowAccessory={
-                      interactionRulesOrgNavDemo &&
-                      interactionRulesOrg0425SwitcherPlacement === "internal" &&
-                      interactionRulesOrgCardMessageId === msg.id ? (
-                        <InteractionRulesOrgSelectBar
-                          organizations={schedule0422NavOrganizations}
-                          currentOrgId={currentOrg}
-                          onOrgSelect={handleOrgSwitch}
-                          embedded
-                        />
-                      ) : undefined
+                    hideSubtitle={
+                      interactionRulesOrgNavDemo && interactionRulesOrgCardMessageId === msg.id
                     }
                   />
-                  {interactionRulesOrgNavDemo &&
-                  interactionRulesOrg0425SwitcherPlacement === "external" &&
-                  interactionRulesOrgCardMessageId === msg.id ? (
-                    <div className="flex flex-wrap gap-[var(--space-200)]">
-                      <ChatPromptButton type="button" onClick={handleInteractionRulesOrg0425Scheme2Demo}>
-                        演示：查看方案2
-                      </ChatPromptButton>
-                    </div>
-                  ) : null}
                 </div>
               </TaskChatMessageRow>
-            </>
+          ) : isOrgEmployeePermissionGuide0425Card ? (
+            <TaskChatMessageRow
+              hideAvatar={hideAvatar}
+              avatarSrc={conversation.user.avatar}
+              operationSourceLabel={operationSourceLabel}
+            >
+              <OrganizationPermissionApplySection0425
+                mode="guideOnly"
+                mainAiGuideAndSettingsTitleBelow={mainAiOrgScopeBarEl ?? undefined}
+              />
+            </TaskChatMessageRow>
+          ) : isOrgSettingsPermission0425Card ? (
+            <TaskChatMessageRow
+              hideAvatar={hideAvatar}
+              avatarSrc={conversation.user.avatar}
+              operationSourceLabel={operationSourceLabel}
+            >
+              <OrganizationPermissionApplySection0425
+                mode="orgSettingsOnly"
+                mainAiGuideAndSettingsTitleBelow={mainAiOrgScopeBarEl ?? undefined}
+              />
+            </TaskChatMessageRow>
           ) : isGenericCard ? (
             <TaskChatMessageRow
               hideAvatar={hideAvatar}
@@ -5734,6 +6001,7 @@ export function MainAIChatWindow({
               onBasicInfoSubmitted={() => setInvite0421EmployeeAwaitingDemoApproval(true)}
               assistantAvatarSrc={conversation.user.avatar}
               hideAvatar={!!hideAvatar}
+              basicInfoTitleBelowAccessory={mainAiOrgScopeBarEl ?? undefined}
             />
           ) : isInvite0421EduStudentInviteFlow ? (
             <Invite0421EduStudentInviteFlowBody
@@ -5746,6 +6014,7 @@ export function MainAIChatWindow({
               roundStackGapClassName="gap-[length:var(--space-500)]"
               mainAiAssistantAvatarSrc={conversation.user.avatar}
               mainAiMergeFirstAssistantRoundWithPrevious={!!hideAvatar}
+              mainAiGenericCardTitleBelow={mainAiEducationScopeBarEl ?? undefined}
             />
           ) : isWorkbenchOrgGatePrompt ? (
             <div className={cnChatAssistantMessageRow({ mergedWithPrevious: !!hideAvatar })}>
@@ -5818,6 +6087,7 @@ export function MainAIChatWindow({
                   onSelectOrg={handleOrgSwitch}
                   onCreateOrg={handleCreateOrg}
                   onJoinOrg={handleJoinOrg}
+                  titleBelowAccessory={mainAiOrgScopeBarEl ?? undefined}
                 />
               </div>
             </div>
@@ -5872,6 +6142,7 @@ export function MainAIChatWindow({
                           phone={successData.phone}
                           description={successData.description}
                           memberCount={successData.memberCount}
+                          titleBelowAccessory={mainAiOrgScopeBarEl ?? undefined}
                         />
                         
                         {/* 行动建议引导气泡 */}
@@ -6005,6 +6276,7 @@ export function MainAIChatWindow({
                         onCancel={() => {
                           // 可选：返回组织切换器
                         }}
+                        titleBelowAccessory={mainAiOrgScopeBarEl ?? undefined}
                       />
                     )
                   } catch (e) {
@@ -6025,6 +6297,7 @@ export function MainAIChatWindow({
               <div className="w-full">
                 <CreateInstitutionEducationSpaceCard
                   onSubmit={handleCreateInstitutionSpaceSubmit}
+                  mainAiTitleBelowAccessory={mainAiEducationScopeBarEl ?? undefined}
                 />
               </div>
             </div>
@@ -6049,6 +6322,7 @@ export function MainAIChatWindow({
                     currentUser.name && currentUser.name !== "我" ? currentUser.name : "yzhao"
                   }
                   onSubmit={handleCreateFamilySpaceSubmit}
+                  mainAiTitleBelowAccessory={mainAiEducationScopeBarEl ?? undefined}
                 />
               </div>
             </div>
@@ -6440,6 +6714,8 @@ export function MainAIChatWindow({
                     ? "日程"
                     : activeApp === "organization"
                       ? "组织"
+                      : activeApp === "employee"
+                        ? "员工"
                       : activeApp === "todo"
                         ? "待办"
                         : activeApp === "meeting"
@@ -6459,6 +6735,8 @@ export function MainAIChatWindow({
                     ? "日程"
                     : activeApp === "organization"
                       ? "组织"
+                      : activeApp === "employee"
+                        ? "员工"
                       : activeApp === "todo"
                         ? "待办"
                         : activeApp === "meeting"
@@ -6531,6 +6809,7 @@ export function MainAIChatWindow({
           activeApp === "education" ||
           activeApp === "task" ||
           activeApp === "mail" ||
+          (organizationManagement0425Demo && activeApp === "employee") ||
           (organizationManagement0425Demo && activeApp === "organization") ||
           (schedule0422DrawerDemo && activeApp === "schedule") ||
           (invite0421DockFlow &&
@@ -6552,7 +6831,9 @@ export function MainAIChatWindow({
           alwaysShowIndependentWindow ||
           activeApp === "education" ||
           activeApp === "task" ||
-          (schedule0422DrawerDemo && activeApp === "schedule")
+          (schedule0422DrawerDemo && activeApp === "schedule") ||
+          (organizationManagement0425Demo &&
+            (activeApp === "organization" || activeApp === "employee"))
         }
         onIndependentWindow={() => {
           if (activeApp && !floatingApps.includes(activeApp)) {
@@ -6928,6 +7209,21 @@ export function MainAIChatWindow({
                 </ChatPromptButton>
               </div>
             </div>
+          ) : activeApp === "employee" && organizationManagement0425Demo ? (
+            <div className="flex w-full flex-col gap-[var(--space-200)]">
+              <ChatWelcome
+                avatarSrc={conversation.user.avatar}
+                greeting="你好，我是你的员工专属 AI 助手。可用底部快捷入口发起权限申请，或直接描述员工相关事项。"
+              />
+              <div className="flex flex-wrap gap-[var(--space-200)] w-full md:ml-[44px]">
+                <ChatPromptButton type="button" onClick={appendEmployeePermissionGuide0425Card}>
+                  员工权限申请
+                </ChatPromptButton>
+                <ChatPromptButton type="button" onClick={handleOrgClick}>
+                  切换组织
+                </ChatPromptButton>
+              </div>
+            </div>
           ) : invite0421DockFlow &&
             !(hasOrganization || workbenchOrgGateReleased) &&
             (activeApp === "todo" ||
@@ -7059,7 +7355,7 @@ export function MainAIChatWindow({
                       onClick={() => handleEducationTeaserFlatButtonClick(app.name)}
                       className="bg-bg flex gap-[var(--space-100)] h-[var(--space-800)] shrink-0 items-center rounded-full border border-border px-[var(--space-300)] py-[var(--space-150)] transition-all duration-300 ease-out hover:bg-[var(--black-alpha-11)]"
                     >
-                      <AppIcon imageSrc={app.imageSrc} className="h-[18px] w-[18px]" />
+                      <AppDockEntryIcon icon={{ imageSrc: app.imageSrc }} className="h-[18px] w-[18px]" />
                       <span className="whitespace-nowrap text-[length:var(--font-size-xs)] font-[var(--font-weight-medium)] leading-none text-[var(--color-text)]">
                         {app.name}
                       </span>
@@ -7103,7 +7399,7 @@ export function MainAIChatWindow({
                   currentApp={switcherCurrentApp}
                 />
 
-                {TASK_APPS.map((app) => (
+                {TASK_DOCK_SECONDARY_APPS.map((app) => (
                   <SecondaryAppButton
                     key={app.id}
                     app={app}
@@ -7228,7 +7524,7 @@ export function MainAIChatWindow({
                   currentApp={switcherCurrentApp}
                 />
 
-                {mailDockApps.map((app) => (
+                {mailSecondaryDockApps.map((app) => (
                   <SecondaryAppButton
                     key={app.id}
                     app={app}
@@ -7474,21 +7770,64 @@ export function MainAIChatWindow({
                   isOpen={isAllAppsOpen}
                   currentApp={switcherCurrentApp}
                 />
-                <div className="scrollbar-hide flex min-w-0 flex-1 items-center gap-[var(--space-150)] overflow-x-auto overflow-y-hidden pb-[var(--space-50)]">
-                  {ORGANIZATION_0425_APPS.map((app) => (
-                    <SecondaryAppButton
-                      key={app.id}
-                      app={app}
-                      onMenuClick={(_menu, appName, appId) => {
-                        if (appId === "org_management") {
-                          appendOrganizationManagement0425Card();
-                          return;
-                        }
-                        toast(`${appName}入口已打开（演示占位）`);
-                      }}
-                    />
-                  ))}
-                </div>
+                {ORGANIZATION_0425_APPS.map((app) => (
+                  <SecondaryAppButton
+                    key={app.id}
+                    app={app}
+                    onMenuClick={(_menu, appName, appId) => {
+                      if (appId === "org_management") {
+                        appendOrganizationManagement0425Card();
+                        return;
+                      }
+                      if (appId === "org_settings") {
+                        appendOrgSettingsPermission0425Card();
+                        return;
+                      }
+                      toast(`${appName}入口已打开（演示占位）`);
+                    }}
+                  />
+                ))}
+              </motion.div>
+            ) : activeApp === "employee" && organizationManagement0425Demo ? (
+              <motion.div
+                key="employee-mode"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="flex min-w-0 flex-1 items-center justify-start gap-[var(--space-200)]"
+              >
+                <button
+                  type="button"
+                  onClick={() => setActiveApp(null)}
+                  className="bg-bg flex shrink-0 gap-[var(--space-100)] h-[var(--space-800)] items-center px-[var(--space-300)] py-[var(--space-150)] rounded-full hover:bg-[var(--black-alpha-11)] transition-all duration-300 ease-out border border-border group"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-text-secondary group-hover:text-text transition-colors">
+                    <path d="M8.75 3.5L5.25 7L8.75 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <p className="text-[length:var(--font-size-xs)] leading-none text-text-secondary group-hover:text-text whitespace-nowrap font-[var(--font-weight-medium)] transition-colors">
+                    返回
+                  </p>
+                </button>
+
+                <OrganizationSwitcherButton
+                  onClick={() => setIsAllAppsOpen(true)}
+                  isOpen={isAllAppsOpen}
+                  currentApp={switcherCurrentApp}
+                />
+                {EMPLOYEE_0425_APPS.map((app) => (
+                  <SecondaryAppButton
+                    key={app.id}
+                    app={app}
+                    onMenuClick={(menu, appName, appId) => {
+                      if (menu === "__direct__" && appId === "emp_permission_apply") {
+                        appendEmployeePermissionGuide0425Card();
+                        return;
+                      }
+                      toast(`${appName}入口已打开（演示占位）`);
+                    }}
+                  />
+                ))}
               </motion.div>
             ) : activeApp === "schedule" && schedule0422DrawerDemo ? (
               <motion.div
@@ -7573,6 +7912,7 @@ export function MainAIChatWindow({
                       if (
                         app.id === "education" ||
                         app.id === "task" ||
+                        (organizationManagement0425Demo && app.id === "employee") ||
                         (organizationManagement0425Demo && app.id === "organization") ||
                         (schedule0422DrawerDemo && app.id === "schedule") ||
                         (invite0421DockFlow &&
@@ -7618,10 +7958,7 @@ export function MainAIChatWindow({
                       draggedIndex === index && 'opacity-20 scale-95'
                     )}
                   >
-                    <AppIcon
-                      imageSrc={app.icon.imageSrc}
-                      className="size-[18px]"
-                    />
+                    <AppDockEntryIcon icon={app.icon} className="size-[18px]" />
                     <p className="text-[length:var(--font-size-xs)] leading-none text-[var(--color-text)] whitespace-nowrap font-[var(--font-weight-medium)]">
                       {app.name}
                     </p>
@@ -7635,7 +7972,7 @@ export function MainAIChatWindow({
                       }}
                       className="bg-bg flex gap-[var(--space-100)] h-[var(--space-800)] items-center px-[var(--space-300)] py-[var(--space-150)] rounded-full shrink-0 hover:bg-[var(--black-alpha-11)] transition-all duration-300 ease-out border border-border select-none cursor-pointer"
                     >
-                      <AppIcon imageSrc={MAIL_APP_DOCK_ITEM.icon.imageSrc} className="size-[18px]" />
+                      <AppDockEntryIcon icon={MAIL_APP_DOCK_ITEM.icon} className="size-[18px]" />
                       <p className="text-[length:var(--font-size-xs)] leading-none text-[var(--color-text)] whitespace-nowrap font-[var(--font-weight-medium)]">
                         {MAIL_APP_DOCK_ITEM.name}
                       </p>
@@ -7826,7 +8163,7 @@ export function MainAIChatWindow({
                               }
                               className="bg-bg flex gap-[var(--space-100)] h-[var(--space-800)] shrink-0 items-center rounded-full border border-border px-[var(--space-300)] py-[var(--space-150)] transition-all duration-300 ease-out hover:bg-[var(--black-alpha-11)]"
                             >
-                              <AppIcon imageSrc={app.imageSrc} className="h-[18px] w-[18px]" />
+                              <AppDockEntryIcon icon={{ imageSrc: app.imageSrc }} className="h-[18px] w-[18px]" />
                               <span className="whitespace-nowrap text-[length:var(--font-size-xs)] font-[var(--font-weight-medium)] leading-none text-[var(--color-text)]">
                                 {app.name}
                               </span>

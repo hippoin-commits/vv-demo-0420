@@ -7,7 +7,22 @@ import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
 import { Textarea } from "../../ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
-import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "../../ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "../../ui/sheet";
+import { ScrollArea } from "../../ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "../../ui/avatar";
+import { ChatNavBar } from "../../chat/ChatNavBar";
+import { ChatSender } from "../../chat/ChatSender";
+import { AssistantChatBubble } from "../../chat/ChatWelcome";
+import {
+  Invite0421DrawerAssistantRow,
+  INVITE0421_DRAWER_ASSISTANT_GROUP_STACK_CLASSNAME,
+} from "../../invite-0421/Invite0421DrawerAssistantRow";
+import {
+  CHAT_MESSAGE_ASSISTANT_AVATAR_CLASSNAME,
+  CHAT_MESSAGE_ASSISTANT_AVATAR_IMAGE_CLASSNAME,
+} from "../../chat/chatMessageLayout";
+import { vvAssistantChatAvatar } from "../../vv-app-shell/vv-ai-frame-assets";
+import { CHAT_BUSINESS_ENTRY_DRAWER_SHEET_CLASSNAME } from "../../../constants/chatBusinessEntryDrawer";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,9 +59,6 @@ type DrawerState = {
 
 const FIELD_CLASS =
   "w-full h-[var(--space-900)] px-[var(--space-300)] rounded-[var(--radius-input)] border border-border bg-bg text-[length:var(--font-size-sm)] text-text";
-
-const DRAWER_CLASSNAME =
-  "h-full w-[70vw] max-w-[70vw] sm:max-w-[70vw] p-0 border-none rounded-l-[length:var(--radius-400)] overflow-hidden flex flex-col gap-0 shadow-2xl [&>button]:hidden";
 
 const INITIAL_DEPARTMENTS_0425: OrgDepartment0425[] = [
   {
@@ -497,11 +509,24 @@ function OrganizationPermissionApplicationCard0425({ changes }: { changes: OrgDe
 
 export function OrganizationManagementCard0425(props?: {
   organizationHeadline?: string;
+  /** 主 AI 下：标题下组织/空间切换（由外层注入，与演示用 `titleBelowAccessory` 组合） */
+  mainAiTitleBelowAccessory?: React.ReactNode;
   /** 标题行下方、副标题上方（如规范演示：卡片内组织切换） */
   titleBelowAccessory?: React.ReactNode;
+  /** 卡内组织切换演示：隐藏第三行副标题 */
+  hideSubtitle?: boolean;
 }) {
   const organizationHeadline = props?.organizationHeadline;
+  const mainAiTitleBelowAccessory = props?.mainAiTitleBelowAccessory;
   const titleBelowAccessory = props?.titleBelowAccessory;
+  const hideSubtitle = props?.hideSubtitle ?? false;
+  const composedTitleBelowAccessory =
+    mainAiTitleBelowAccessory || titleBelowAccessory ? (
+      <>
+        {mainAiTitleBelowAccessory}
+        {titleBelowAccessory}
+      </>
+    ) : undefined;
   const [departments, setDepartments] = React.useState<OrgDepartment0425[]>(() => cloneInitialDepartments0425());
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({
     pg: true,
@@ -509,6 +534,7 @@ export function OrganizationManagementCard0425(props?: {
     strategy: true,
   });
   const [drawer, setDrawer] = React.useState<DrawerState>(null);
+  const [org0425DrawerComposerValue, setOrg0425DrawerComposerValue] = React.useState("");
   const [deleteTargetId, setDeleteTargetId] = React.useState<string | null>(null);
   const [applicationVisible, setApplicationVisible] = React.useState(false);
 
@@ -559,6 +585,7 @@ export function OrganizationManagementCard0425(props?: {
     }
     setApplicationVisible(false);
     setDrawer(null);
+    setOrg0425DrawerComposerValue("");
   };
 
   const confirmDelete = () => {
@@ -581,11 +608,13 @@ export function OrganizationManagementCard0425(props?: {
     <>
       <GenericCard
         title="组织管理"
-        titleBelowAccessory={titleBelowAccessory}
+        titleBelowAccessory={composedTitleBelowAccessory}
         subtitle={
-          organizationHeadline
-            ? `部门与权限申请 · ${organizationHeadline}`
-            : "部门与权限申请"
+          hideSubtitle
+            ? undefined
+            : organizationHeadline
+              ? `部门与权限申请 · ${organizationHeadline}`
+              : "部门与权限申请"
         }
         className="w-full max-w-none"
       >
@@ -717,28 +746,86 @@ export function OrganizationManagementCard0425(props?: {
 
       {applicationVisible ? <OrganizationPermissionApplicationCard0425 changes={pendingChanges} /> : null}
 
-      <Sheet open={drawer !== null && drawerTarget !== null} onOpenChange={(open) => !open && setDrawer(null)}>
-        <SheetContent side="right" className={DRAWER_CLASSNAME}>
-          <SheetHeader className="border-b border-border px-[var(--space-400)] py-[var(--space-300)]">
-            <SheetTitle className="text-[length:var(--font-size-md)] text-text">
-              {drawer?.mode === "add" ? "新增子部门" : "编辑部门"}
-            </SheetTitle>
-            <SheetDescription className="text-[length:var(--font-size-xs)] text-text-tertiary">
-              提交后仅标记为待提交状态，不直接生效。
-            </SheetDescription>
-          </SheetHeader>
-          <div className="min-h-0 flex-1 overflow-y-auto bg-bg-secondary px-[max(20px,var(--cui-padding-max))] py-[var(--space-500)]">
-            {drawer && drawerTarget ? (
-              <OrganizationDepartmentForm0425
-                mode={drawer.mode}
-                target={drawerTarget}
-                parent={drawerParent}
-                onCancel={() => setDrawer(null)}
-                onSubmit={submitDrawer}
-              />
-            ) : null}
+      <Sheet
+        open={drawer !== null && drawerTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDrawer(null);
+            setOrg0425DrawerComposerValue("");
+          }
+        }}
+      >
+        <SheetContent side="right" className={CHAT_BUSINESS_ENTRY_DRAWER_SHEET_CLASSNAME}>
+          <div className="sr-only">
+            <SheetTitle>{drawer?.mode === "add" ? "新增子部门" : "编辑部门"}</SheetTitle>
+            <SheetDescription>组织管理 CUI 抽屉（业务入口壳层）</SheetDescription>
           </div>
-          <SheetFooter className="hidden" />
+          <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-cui-bg">
+            <ChatNavBar
+              title={drawer?.mode === "add" ? "新增子部门" : "编辑部门"}
+              titleOnlyChrome
+              showClose
+              onClose={() => {
+                setDrawer(null);
+                setOrg0425DrawerComposerValue("");
+              }}
+            />
+            <ScrollArea className="relative z-10 min-h-0 flex-1">
+              <div
+                className={cn(
+                  "mx-auto flex min-h-full w-full max-w-[1920px] flex-col px-[max(20px,var(--cui-padding-max))] py-[var(--space-500)]",
+                  INVITE0421_DRAWER_ASSISTANT_GROUP_STACK_CLASSNAME,
+                )}
+              >
+                <Invite0421DrawerAssistantRow
+                  showAvatar
+                  avatar={
+                    <Avatar className={CHAT_MESSAGE_ASSISTANT_AVATAR_CLASSNAME}>
+                      <AvatarImage
+                        src={vvAssistantChatAvatar}
+                        alt=""
+                        className={CHAT_MESSAGE_ASSISTANT_AVATAR_IMAGE_CLASSNAME}
+                      />
+                      <AvatarFallback className="text-[length:var(--font-size-xs)]">AI</AvatarFallback>
+                    </Avatar>
+                  }
+                >
+                  <AssistantChatBubble>
+                    {drawer?.mode === "add"
+                      ? "已打开新增子部门。请在下方卡片中填写信息后提交；提交后仅标记为待提交状态，不直接生效。"
+                      : "已打开部门编辑。请在下方卡片中修改信息后提交；提交后仅标记为待提交状态，不直接生效。"}
+                  </AssistantChatBubble>
+                </Invite0421DrawerAssistantRow>
+                <Invite0421DrawerAssistantRow showAvatar={false}>
+                  {drawer && drawerTarget ? (
+                    <OrganizationDepartmentForm0425
+                      mode={drawer.mode}
+                      target={drawerTarget}
+                      parent={drawerParent}
+                      onCancel={() => {
+                        setDrawer(null);
+                        setOrg0425DrawerComposerValue("");
+                      }}
+                      onSubmit={submitDrawer}
+                    />
+                  ) : null}
+                </Invite0421DrawerAssistantRow>
+              </div>
+            </ScrollArea>
+            <div className="relative z-20 w-full flex-none px-[max(20px,var(--cui-padding-max))] pb-[var(--space-400)] pt-0">
+              <ChatSender
+                inputValue={org0425DrawerComposerValue}
+                setInputValue={setOrg0425DrawerComposerValue}
+                handleSendMessage={() => setOrg0425DrawerComposerValue("")}
+                handleKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                  }
+                }}
+                placeholder="我可以帮您做什么？"
+              />
+            </div>
+          </div>
         </SheetContent>
       </Sheet>
 

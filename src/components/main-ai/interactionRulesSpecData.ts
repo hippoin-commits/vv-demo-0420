@@ -24,6 +24,7 @@
  *    左侧大纲的演示摘要行与正文末尾「本节演示」区块均由 `InteractionRulesDocShell` **按该节点 `demoLinks` 自动生成**——数据层对位正确，界面上的演示入口即正确；**切勿**只改文档却清空、遗漏或错挂 `demoLinks`。
  * 7. **整段（大段）规范粘贴更新时（在遵守第 1–6 条之外）**：**仅当** 需求方以 **整段大段** 规范正文驱动合并更新并完成落库时，才须对 **新旧版本做对比**（如本文件 `INTERACTION_RULES_SPEC_ROOT` 及同期改动的壳层/渲染文件 diff），将 **有研发阅读价值的变更** 写入 `interactionRulesChangelog.ts`（面向研发，**非**每次小改、局部修补、无关工程调整都要记）。须写成 **精炼** 的更新日志（可多条合并一条），**不要过于细碎**；**过滤**无价值条目（纯措辞、仅空格换行、与规范无关的重排等）。新条目插在 `INTERACTION_RULES_CHANGELOG_ENTRIES` **数组最前**；`at` / `id` / `body` 约定见该文件头注释。
  * 8. **更新日志参考（暗号）**：若需求方在整段规范 **之外** 另附一段以 **「以下是修改日志参考」** 开头的说明（与规范正文 **明确分隔**），该段 **仅供** 撰写 `interactionRulesChangelog.ts` 时对照：须结合 diff / 规范理解 **整理成最贴切** 的更新日志，且仍遵守第 7 条。**严禁** 将该暗号行及其后参考写入 `INTERACTION_RULES_SPEC_ROOT` 或任一章节 `body`。未附该暗号时，仅按第 7 条与 diff 归纳即可。
+ * 9. **`title` 不与 `num` 双写序号**：左侧大纲与正文标题行已单独展示 `num`，`title` 内 **不要** 再保留「一、」「二、」等与章节位次重复的中文序号前缀，也不要在 `title` 开头重复写与 `num` 相同的阿拉伯小节号（如 `num` 为 `2.1` 时标题不要以 `2.1、` 起头）。需求方 **整段粘贴** 规范入本树时，Agent 合并后须自检：用 `normalizeSpecTitleForDisplay(title, num)` 对照每一节，去重后写入 `title`；壳层展示亦使用该函数，避免偶发漏改时界面仍出现「1 + 一、」双编号。
  *
  * @see `InteractionRulesDocShell.tsx` 壳层布局与联动
  * @see `specDocBodyRender.tsx` 正文渲染
@@ -50,6 +51,49 @@ export type SpecNode = {
   children?: SpecNode[]
 }
 
+const ZH_ORD_1_9 = ["", "一", "二", "三", "四", "五", "六", "七", "八", "九"] as const
+
+/** 1–99 → 与规范稿「一、」「十二、」对齐的中文节号（非金额大写） */
+function integerSectionToChineseOrdinal(n: number): string | null {
+  if (n < 1 || n > 99) return null
+  if (n < 10) return ZH_ORD_1_9[n]!
+  if (n === 10) return "十"
+  if (n < 20) return "十" + ZH_ORD_1_9[n % 10]!
+  if (n % 10 === 0) return ZH_ORD_1_9[Math.floor(n / 10)]! + "十"
+  return ZH_ORD_1_9[Math.floor(n / 10)]! + "十" + ZH_ORD_1_9[n % 10]!
+}
+
+/**
+ * 展示用标题：去掉与 `num` 重复的前缀（见文件头维护约定第 9 条）。
+ * 合并粘贴大段规范后写库前应对每个节点执行并落盘；壳层亦用此结果渲染。
+ */
+export function normalizeSpecTitleForDisplay(title: string, num: string): string {
+  let t = title.trim()
+  const numTrim = num.trim()
+
+  if (/^\d+(\.\d+)+$/.test(numTrim)) {
+    const esc = numTrim.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    t = t.replace(new RegExp(`^\\s*${esc}\\s*[、,，.]\\s*`), "").trim()
+    t = t.replace(new RegExp(`^\\s*${esc}\\s+`), "").trim()
+  }
+
+  if (/^\d+$/.test(numTrim)) {
+    const n = parseInt(numTrim, 10)
+    const cn = integerSectionToChineseOrdinal(n)
+    if (cn) {
+      for (const sep of ["、", "，", ",", "."] as const) {
+        const p = cn + sep
+        if (t.startsWith(p)) {
+          t = t.slice(p.length).trim()
+          break
+        }
+      }
+    }
+  }
+
+  return t
+}
+
 export const INTERACTION_RULES_SPEC_DOC_TITLE =
   "VV AI 对话式交互（CUI）规范框架（V0.5）"
 
@@ -57,7 +101,7 @@ export const INTERACTION_RULES_SPEC_ROOT: SpecNode[] = [
   {
     id: "ch-1",
     num: "1",
-    title: "一、核心定位与界面形态",
+    title: "核心定位与界面形态",
     body: "",
     children: [
       {
@@ -124,7 +168,7 @@ export const INTERACTION_RULES_SPEC_ROOT: SpecNode[] = [
   {
     id: "ch-2",
     num: "2",
-    title: "二、用户输入体系（双路并行，无主副之分）",
+    title: "用户输入体系（双路并行，无主副之分）",
     body: "",
     children: [
       {
@@ -158,7 +202,7 @@ export const INTERACTION_RULES_SPEC_ROOT: SpecNode[] = [
   {
     id: "ch-3",
     num: "3",
-    title: "三、系统输出体系（文字叙事 + 状态卡片 + 行动建议）",
+    title: "系统输出体系（文字叙事 + 状态卡片 + 行动建议）",
     body: "",
     children: [
       {
@@ -211,7 +255,7 @@ export const INTERACTION_RULES_SPEC_ROOT: SpecNode[] = [
   {
     id: "ch-4",
     num: "4",
-    title: "四、业务分配与调度规则",
+    title: "业务分配与调度规则",
     body: "",
     children: [
       {
@@ -245,7 +289,7 @@ export const INTERACTION_RULES_SPEC_ROOT: SpecNode[] = [
   {
     id: "ch-5",
     num: "5",
-    title: "五、多意图 / 多业务处理规则",
+    title: "多意图 / 多业务处理规则",
     body: "",
     children: [
       {
@@ -253,6 +297,13 @@ export const INTERACTION_RULES_SPEC_ROOT: SpecNode[] = [
         num: "5.1",
         title: "默认规则",
         body: "除非用户明确要求，一轮对话只返回一个业务的结果。",
+        demoLinks: [
+          {
+            id: "demo-5-1-im-framework",
+            label: "通过MCP实现IM界面框架",
+            command: { kind: "openImFrameworkDemo" },
+          },
+        ],
       },
       {
         id: "ch-5-2",
@@ -274,7 +325,7 @@ export const INTERACTION_RULES_SPEC_ROOT: SpecNode[] = [
   {
     id: "ch-6",
     num: "6",
-    title: "六、上下文与对话生命周期",
+    title: "上下文与对话生命周期",
     body: "",
     children: [
       {
@@ -306,7 +357,7 @@ export const INTERACTION_RULES_SPEC_ROOT: SpecNode[] = [
   {
     id: "ch-7",
     num: "7",
-    title: "七、历史定位与操作回溯",
+    title: "历史定位与操作回溯",
     body: "",
     children: [
       {
@@ -333,7 +384,7 @@ export const INTERACTION_RULES_SPEC_ROOT: SpecNode[] = [
   {
     id: "ch-8",
     num: "8",
-    title: "八、整体体验原则",
+    title: "整体体验原则",
     body: `1. 自然语言与 GUI 操作并行互补，同等重要
 2. 对话轻量化，只展示结果，过程收敛在卡片内
 3. 状态可预测、操作可追溯、结果可归档

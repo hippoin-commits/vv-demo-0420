@@ -31,16 +31,13 @@ import {
   INVITE0421_ORG_EMPLOYEE_SUBMIT_SUCCESS_TEXT,
 } from "./Invite0421OrgEmployeeOnboardingPanel";
 import { INVITE0421_DEMO_INVITER, INVITE0421_ORG_COMPANY_NAME } from "../../constants/invite0421InvitedTodo";
+import { CHAT_BUSINESS_ENTRY_DRAWER_SHEET_CLASSNAME } from "../../constants/chatBusinessEntryDrawer";
 import {
   CHAT_MESSAGE_ASSISTANT_AVATAR_CLASSNAME,
   CHAT_MESSAGE_ASSISTANT_AVATAR_IMAGE_CLASSNAME,
 } from "../chat/chatMessageLayout";
 
 const TABS = ["全部", "@我", "未读", "单聊", "群聊", "工作"] as const;
-
-/** 与 Home「业务入口」抽屉一致：视口宽度 70%、左侧圆角、无默认边线 */
-const CHAT_BUSINESS_ENTRY_DRAWER_SHEET_CLASSNAME =
-  "h-full w-[70vw] max-w-[70vw] sm:max-w-[70vw] p-0 border-none rounded-l-[length:var(--radius-400)] overflow-hidden flex flex-col gap-0 shadow-2xl [&>button]:hidden";
 
 type SessionRow = {
   id: string;

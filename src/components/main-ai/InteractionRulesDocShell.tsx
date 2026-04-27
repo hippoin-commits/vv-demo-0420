@@ -15,6 +15,7 @@ import {
   INTERACTION_RULES_SPEC_DOC_TITLE,
   INTERACTION_RULES_SPEC_FLAT,
   INTERACTION_RULES_SPEC_ROOT,
+  normalizeSpecTitleForDisplay,
   type SpecNode,
   specAnchorDomId,
   specDemoSectionDomId,
@@ -135,7 +136,7 @@ function DocArticle(props: {
         <span className="mr-[length:var(--space-200)] font-mono text-[length:var(--font-size-sm)] font-[var(--font-weight-medium)] text-text-tertiary">
           {node.num}
         </span>
-        {node.title}
+        {normalizeSpecTitleForDisplay(node.title, node.num)}
       </h2>
       {node.body.trim() ? <SpecDocBody markdown={node.body} /> : null}
       {demos?.length ? (
@@ -194,7 +195,7 @@ function OutlineRow(props: {
           {node.num}
         </span>
         <span className="min-w-0 flex-1 truncate text-[length:var(--font-size-sm)] font-[var(--font-weight-regular)] leading-none">
-          {node.title}
+          {normalizeSpecTitleForDisplay(node.title, node.num)}
         </span>
       </button>
       {demoCount === 1 && demos ? (

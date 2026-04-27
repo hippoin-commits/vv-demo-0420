@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Plus } from "lucide-react";
 import { type AppItem } from "./MainAIChatWindow";
-import { AppIcon } from "./AppIcon";
+import { AppDockEntryIcon } from "./AppIcon";
 import { cn } from "../ui/utils";
 
 interface AllAppsDrawerProps {
@@ -165,7 +165,7 @@ export function AllAppsDrawer({
                       className="flex w-full flex-col items-center gap-[var(--space-100)] rounded-[var(--radius-300)] p-1 hover:bg-[var(--black-alpha-08)]"
                     >
                       <div className="relative h-[var(--space-900)] w-[var(--space-900)] shrink-0">
-                        <AppIcon imageSrc={app.icon.imageSrc} className="h-full w-full" />
+                        <AppDockEntryIcon icon={app.icon} className="h-full w-full" />
                       </div>
                       <p className="h-[var(--space-700)] w-full break-words text-center text-[length:var(--font-size-xs)] leading-normal text-text-secondary">
                         {app.name}
@@ -187,7 +187,7 @@ export function AllAppsDrawer({
                       >
                         <div className="relative h-[var(--space-900)] w-[var(--space-900)] shrink-0">
                           <Invite0421GridBadge />
-                          <AppIcon imageSrc={app.icon.imageSrc} className="h-full w-full" />
+                          <AppDockEntryIcon icon={app.icon} className="h-full w-full" />
                         </div>
                         <p className="h-[var(--space-700)] w-full break-words text-center text-[length:var(--font-size-xs)] leading-normal text-text-secondary">
                           {app.name}
@@ -228,7 +228,7 @@ export function AllAppsDrawer({
                   )}
                 >
                   <div className="relative h-[var(--space-900)] w-[var(--space-900)] shrink-0">
-                    <AppIcon imageSrc={app.icon.imageSrc} className="h-full w-full" />
+                    <AppDockEntryIcon icon={app.icon} className="h-full w-full" />
                   </div>
                   <p className="h-[var(--space-700)] w-full break-words text-center text-[length:var(--font-size-xs)] leading-normal text-text-secondary">
                     {app.name}

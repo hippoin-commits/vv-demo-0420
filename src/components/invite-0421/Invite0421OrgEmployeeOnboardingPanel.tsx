@@ -24,9 +24,11 @@ const INVITE_TASK_STYLE_FIELD_CLASS =
 export function Invite0421OrgEmployeeBasicInfoForm({
   frozen,
   onSubmit,
+  titleBelowAccessory,
 }: {
   frozen: boolean;
   onSubmit: (payload: { name: string; gender: string }) => void;
+  titleBelowAccessory?: React.ReactNode;
 }) {
   const [name, setName] = React.useState("");
   const [gender, setGender] = React.useState("保密");
@@ -34,6 +36,7 @@ export function Invite0421OrgEmployeeBasicInfoForm({
   return (
     <GenericCard
       title="基本信息"
+      titleBelowAccessory={titleBelowAccessory}
       className={cn("@container min-w-0", frozen && "opacity-[0.92]")}
     >
       <p className="mb-[var(--space-400)] text-[length:var(--font-size-xs)] text-text-secondary">

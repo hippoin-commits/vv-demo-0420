@@ -355,9 +355,11 @@ function FlowDesignImmersiveModal0424({
 export function PermissionEditCard0424({
   onReplaceWithDetail,
   onScrollMutatedCardToTop,
+  titleBelowAccessory,
 }: {
   onReplaceWithDetail: (payload: PermissionEditDetailPayload0424) => void;
   onScrollMutatedCardToTop: () => void;
+  titleBelowAccessory?: React.ReactNode;
 }) {
   const [form, setForm] = React.useState<PermissionEditDetailPayload0424>({ ...DEFAULT_FORM });
   const [formDesignOpen, setFormDesignOpen] = React.useState(false);
@@ -379,7 +381,12 @@ export function PermissionEditCard0424({
 
   return (
     <>
-      <GenericCard title="权限编辑" subtitle="预算审批流程" className="w-full max-w-[min(100%,length:calc(var(--space-800)*15)))]">
+      <GenericCard
+        title="权限编辑"
+        subtitle="预算审批流程"
+        titleBelowAccessory={titleBelowAccessory}
+        className="w-full max-w-[min(100%,length:calc(var(--space-800)*15)))]"
+      >
         <p className="text-[length:var(--font-size-xs)] text-text-secondary">
           演示：将原 GUI 三步向导收束为一张对话卡片；「表单设计」「流程设计」在沉浸式弹窗中操作。
         </p>
@@ -672,7 +679,13 @@ const GROUP_LABEL: Record<string, string> = {
   admin: "行政流程",
 };
 
-export function PermissionDetailCard0424({ payload }: { payload: PermissionEditDetailPayload0424 }) {
+export function PermissionDetailCard0424({
+  payload,
+  titleBelowAccessory,
+}: {
+  payload: PermissionEditDetailPayload0424;
+  titleBelowAccessory?: React.ReactNode;
+}) {
   const rows: { k: string; v: string }[] = [
     { k: "业务类型", v: BIZ_LABEL[payload.bizType] ?? payload.bizType },
     { k: "流程名称", v: payload.flowName },
@@ -718,6 +731,7 @@ export function PermissionDetailCard0424({ payload }: { payload: PermissionEditD
           </span>
         ) : undefined
       }
+      titleBelowAccessory={titleBelowAccessory}
       subtitle={payload.flowName}
       className="w-full max-w-[min(100%,length:calc(var(--space-800)*15)))]"
     >

@@ -6,6 +6,8 @@ export type DemoInstructionCommand =
   | { kind: "prefillBusinessCardCommandDemo" }
   /**
    * 交互规范文档「3.2」：若不在主 AI 则切回主 AI，并在主 AI 对话流插入 0425 组织管理演示卡；
-   * 卡片外侧顶部左对齐展示与顶栏一致的组织切换入口（无底色、无创建/加入区）。
+   * 默认在卡片内标题下展示组织切换（方案1）；可通过行动建议切换为卡外左对齐、与顶栏一致的组织切换入口（方案2，无底色、无创建/加入区）。
    */
   | { kind: "showMainAiOrgManagementSwitcherDemo" }
+  /** 交互规范文档「5.1」：切至主导航「消息」并展示 IM 界面框架（MCP 设计对齐，演示） */
+  | { kind: "openImFrameworkDemo" }

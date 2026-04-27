@@ -55,7 +55,7 @@ export const TASK_APPS = [
 ];
 
 /** 演示用当前用户，与列表/详情人名一致 */
-export const DEMO_CURRENT_USER = "殷朝";
+export const DEMO_CURRENT_USER = "张三";
 
 export type TaskRow = {
   id: string;

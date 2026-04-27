@@ -12,6 +12,7 @@ interface JoinOrgConfirmCardProps {
   description: string;
   onConfirm: (orgId: string) => void;
   onCancel: () => void;
+  titleBelowAccessory?: React.ReactNode;
 }
 
 export function JoinOrgConfirmCard({
@@ -21,11 +22,12 @@ export function JoinOrgConfirmCard({
   memberCount,
   description,
   onConfirm,
-  onCancel
+  onCancel,
+  titleBelowAccessory,
 }: JoinOrgConfirmCardProps) {
   return (
     <>
-      <GenericCard title="确认加入组织">
+      <GenericCard title="确认加入组织" titleBelowAccessory={titleBelowAccessory}>
         <div className="flex flex-col gap-[var(--space-400)]">
           {/* Organization Info */}
           <div className="flex items-start gap-[var(--space-400)] p-[var(--space-400)] bg-bg-secondary border border-border rounded-md">

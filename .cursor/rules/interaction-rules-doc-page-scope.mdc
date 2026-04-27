@@ -1,0 +1,37 @@
+---
+description: 默认仅改动首页入口「交互规范文档 - 持续更新中」对应实现；扩大范围须用户明确说明。
+alwaysApply: true
+---
+
+# 交互规范文档页 — 默认修改范围
+
+用户约定：**除非用户明确要求扩大范围**，Agent 在本仓库的代码改动应只服务于首页入口 **「交互规范文档 - 持续更新中」**（路由对应 `MainAI0421InteractionRulesPage`，经 `MainAI` 传入 `demoInstructionShell` 等演示 props）。
+
+## 规范正文合并（粘贴大段）
+
+- 写入 `interactionRulesSpecData.ts` 的每个节点：`title` 不得与左侧/正文已有的 `num` **双写**章节号（如标题内不要再写「一、」「二、」或与 `num` 相同的 `2.1、` 前缀）。
+- 合并后自检：对 `(title, num)` 调用 `normalizeSpecTitleForDisplay`（同文件导出），去重后的字符串作为落库的 `title`；壳层展示亦使用该函数。
+
+## 允许改动的典型路径
+
+- `src/pages/MainAI0421InteractionRulesPage.tsx`
+- `src/components/main-ai/InteractionRulesDocShell.tsx`
+- `src/components/main-ai/InteractionRulesChangelogDialog.tsx`
+- `src/components/main-ai/interactionRulesSpecData.ts`
+- `src/constants/interactionRules*.ts`、`src/constants/interactionRulesChangelog.ts`
+- `src/components/main-ai/demoInstructionTypes.ts` 及仅被交互规范文档演示消费的指令/nonce 逻辑
+- `src/routes.ts` 中该页路由注册（仅在与本入口相关时）
+
+## 共享组件（`MainAI.tsx` / `MainAIChatWindow.tsx` 等）
+
+允许修改 **仅当** 变更通过已有或新增的明确条件限定在「交互规范文档」场景，例如：
+
+- `demoInstructionShell === true` 分支
+- `interactionRulesNaturalDialogDemoNonce` / `interactionRulesBusinessCardDemoNonce` 等仅文档页传入的 props
+- `invite0421` + 无组织壳等与 **该页当前 props 组合** 绑定的演示路径
+
+**禁止**：为其它 Demo 页、首页其它入口、无关业务调整默认行为或公共路径，除非用户在该轮对话中明确写清要动其它页面。
+
+## 用户扩大范围时
+
+若用户写明「也改首页 / 改某某页 / 全站」等，再按新说明执行。

@@ -5,6 +5,8 @@ import { cn } from "../ui/utils";
 export interface GenericFormCardProps {
   title: string | ReactNode;
   icon?: ReactNode;
+  /** 主 AI 下：标题行下方、与内容区分隔前的上下文条（如组织/教育空间切换） */
+  titleBelowAccessory?: ReactNode;
   children: ReactNode;
   submitText?: string;
   resetText?: string;
@@ -18,6 +20,7 @@ export interface GenericFormCardProps {
 export function GenericFormCard({
   title,
   icon,
+  titleBelowAccessory,
   children,
   submitText = "提交",
   resetText = "重置",
@@ -46,6 +49,7 @@ export function GenericFormCard({
             {title}
           </div>
         </div>
+        {titleBelowAccessory ? <div className="relative mt-[var(--space-100)] w-full min-w-0">{titleBelowAccessory}</div> : null}
       </div>
 
       {/* Content */}

@@ -11,6 +11,7 @@ import {
   DEMO_HOME_INTERACTION_RULES_ENTRY,
   DEMO_HOME_PRIMARY_NAV_ENTRIES,
 } from "./constants/demoHomeNavEntries";
+import { CHAT_BUSINESS_ENTRY_DRAWER_SHEET_CLASSNAME } from "./constants/chatBusinessEntryDrawer";
 
 export function Home() {
   const [open, setOpen] = useState(false);
@@ -47,10 +48,7 @@ export function Home() {
                 业务入口
               </Button>
             </SheetTrigger>
-            <SheetContent 
-              side="right" 
-              className="h-full w-[70vw] max-w-[70vw] sm:max-w-[70vw] p-0 border-none rounded-l-[length:var(--radius-400)] overflow-hidden flex flex-col gap-0 shadow-2xl [&>button]:hidden"
-            >
+            <SheetContent side="right" className={CHAT_BUSINESS_ENTRY_DRAWER_SHEET_CLASSNAME}>
               <div className="sr-only">
                 <SheetTitle>Chat View</SheetTitle>
                 <SheetDescription>业务入口抽屉视图</SheetDescription>

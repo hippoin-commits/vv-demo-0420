@@ -17,10 +17,7 @@ import { vvAssistantChatAvatar } from "../vv-app-shell/vv-ai-frame-assets"
 import { cn } from "../ui/utils"
 import type { Schedule0422Item } from "./schedule0422Model"
 import { Schedule0422DetailCard } from "./Schedule0422DetailCard"
-
-/** 与 `Invite0421MessageModule` / Home「业务入口」抽屉一致 */
-const CHAT_BUSINESS_ENTRY_DRAWER_SHEET_CLASSNAME =
-  "h-full w-[70vw] max-w-[70vw] sm:max-w-[70vw] p-0 border-none rounded-l-[length:var(--radius-400)] overflow-hidden flex flex-col gap-0 shadow-2xl [&>button]:hidden"
+import { CHAT_BUSINESS_ENTRY_DRAWER_SHEET_CLASSNAME } from "../../constants/chatBusinessEntryDrawer";
 
 export function Schedule0422BusinessDrawer(props: {
   open: boolean

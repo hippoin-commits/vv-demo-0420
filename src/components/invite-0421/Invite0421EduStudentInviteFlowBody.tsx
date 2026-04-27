@@ -148,11 +148,13 @@ function EduSubmittedRound({
   spaceCreatedLabel,
   childName,
   hideAssistantAvatar,
+  mainAiGenericCardTitleBelow,
 }: {
   onEnterSpace: () => void;
   spaceCreatedLabel: string;
   childName: string;
   hideAssistantAvatar?: boolean;
+  mainAiGenericCardTitleBelow?: React.ReactNode;
 }) {
   const [demoPwdVisible, setDemoPwdVisible] = React.useState(false);
 
@@ -173,7 +175,11 @@ function EduSubmittedRound({
         </AssistantChatBubble>
       </EduDrawerAiRow>
       <EduDrawerAiRow lead={false} hideAssistantAvatar={hideAssistantAvatar}>
-        <GenericCard title="孩子账号" subtitle="孩子的专属账号，可独立登录薇薇参与课程计划">
+        <GenericCard
+          title="孩子账号"
+          subtitle="孩子的专属账号，可独立登录薇薇参与课程计划"
+          titleBelowAccessory={mainAiGenericCardTitleBelow}
+        >
           <div className="flex w-full flex-col gap-[length:var(--space-200)] rounded-[length:var(--radius-200)] bg-bg-secondary p-[length:var(--space-250)] text-[length:var(--font-size-xs)]">
             <div className="flex items-center justify-between gap-[length:var(--space-200)]">
               <span className="text-text-secondary">微微号</span>
@@ -247,6 +253,7 @@ export function Invite0421EduStudentInviteFlowBody({
   roundStackGapClassName,
   mainAiAssistantAvatarSrc,
   mainAiMergeFirstAssistantRoundWithPrevious = false,
+  mainAiGenericCardTitleBelow,
 }: {
   state: Invite0421EduInviteFlowState;
   onPatch: (p: Patch) => void;
@@ -256,6 +263,8 @@ export function Invite0421EduStudentInviteFlowBody({
   mainAiAssistantAvatarSrc?: string;
   /** 与上一条助手消息合并纵向间距（同 `hideAvatar` 语义） */
   mainAiMergeFirstAssistantRoundWithPrevious?: boolean;
+  /** 主 AI：各 `GenericCard` 标题下教育空间切换（抽屉内勿传） */
+  mainAiGenericCardTitleBelow?: React.ReactNode;
 }) {
   const { joined, askedWhatIs, showForm, spaceName, roleChoice, submitted } = state;
   const embedMainAi = Boolean(mainAiAssistantAvatarSrc);
@@ -281,7 +290,11 @@ export function Invite0421EduStudentInviteFlowBody({
   const inviteCardInner = (
     <div className={cn("flex w-full min-w-0 flex-col", INVITE0421_DRAWER_ASSISTANT_GROUP_STACK_CLASSNAME)}>
       <EduDrawerAiRow lead hideAssistantAvatar={innerHide}>
-        <GenericCard title="学生邀请" subtitle={INVITE0421_EDU_STUDENT_ORG}>
+        <GenericCard
+          title="学生邀请"
+          subtitle={INVITE0421_EDU_STUDENT_ORG}
+          titleBelowAccessory={embedMainAi ? mainAiGenericCardTitleBelow : undefined}
+        >
           <p className="m-0 text-[length:var(--font-size-base)] font-[var(--font-weight-semibold)] leading-snug text-text">
             {INVITE0421_EDU_STUDENT_ORG} 邀请 {INVITE0421_EDU_STUDENT_CHILD} 加入成为学生
           </p>
@@ -355,6 +368,7 @@ export function Invite0421EduStudentInviteFlowBody({
         <GenericCard
           title="创建教育空间"
           subtitle="请填写以下信息（演示数据，不提交真实后端）"
+          titleBelowAccessory={embedMainAi ? mainAiGenericCardTitleBelow : undefined}
           className={cn("@container min-w-0", formSolidified && "opacity-[0.92]")}
         >
           <div className="flex w-full flex-col gap-[length:var(--space-400)]">
@@ -476,6 +490,7 @@ export function Invite0421EduStudentInviteFlowBody({
               spaceCreatedLabel={INVITE0421_EDU_SPACE_CREATED_LABEL}
               childName={INVITE0421_EDU_STUDENT_CHILD}
               hideAssistantAvatar={innerHide}
+              mainAiGenericCardTitleBelow={embedMainAi ? mainAiGenericCardTitleBelow : undefined}
             />,
           )
         : null}

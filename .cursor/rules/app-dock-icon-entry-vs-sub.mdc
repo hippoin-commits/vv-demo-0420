@@ -1,0 +1,21 @@
+---
+description: 主 AI / 应用 AI 底栏图标：一级应用入口 vs 应用内子入口的样式分界（与返回、应用切换区分）。
+globs: "**/*.{tsx,ts}"
+alwaysApply: false
+---
+
+# 底栏图标：应用入口 vs 应用内子入口
+
+## 适用范围
+
+主 AI 底部应用 pill 区、进入子应用后的底栏（与 `MainAIChatWindow`、`OrganizationSwitcherButton`、`AllAppsDrawer`、`SecondaryAppButton`、任务/邮箱/组织等演示底栏相关改动时遵守）。
+
+## 规则
+
+1. **一级应用入口**（主底栏上的「教育 / 任务 / 文档…」、全部应用抽屉网格里的应用块、子应用态下「应用切换」里展示的**当前应用**图标）：**饱和色块底 + 白色符号**。位图用 `AppIcon`；文档等少数类型用 `AppDockEntryIcon`（`iconType: docs` → 品牌橙底 + 白 `FileText`）。
+2. **应用内子入口**（子应用内底栏上除「返回」「应用切换」外的快捷 pill、带二级菜单的 `SecondaryAppButton`）：**浅色半透明底 + 同色相深色线标图标**，禁止再用「深底白标」的应用入口位图作为主图标；实现上优先 `iconNode` + `subEntryTint`（见 `MainAIChatWindow` · `SecondaryAppButtonApp`）。
+3. **例外**：「返回」仅文字/线标；「应用切换」与主底栏当前应用展示仍属入口层，保持入口样式。
+
+## 反例（禁止）
+
+在邮箱、任务、组织等**应用内**底栏，用 `AppIcon` 直接铺全色块应用位图作为主按钮图标（易与一级入口混淆，且不符合浅底深标规范）。

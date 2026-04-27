@@ -28,11 +28,23 @@ export function InteractionRulesOrgSelectBar({
   onOrgSelect,
   /** 嵌入 GenericCard 标题区时去掉与卡片的额外下边距 */
   embedded = false,
+  /** 卡外条：外层已控制与卡片间距时用 none，避免叠加大下边距 */
+  trailingMargin = "default",
+  /** 卡内条：隐藏触发器左侧组织图标，仅保留整块热区点击能力 */
+  hideTriggerOrgIcon = false,
+  /** 卡内条：下拉菜单中隐藏左侧排序图标 */
+  hideMenuSortIcon = false,
+  /** 卡内条：将组织名称文字调整为卡片第二行弱化样式 */
+  textTone = "default",
 }: {
   organizations: Organization[];
   currentOrgId: string;
   onOrgSelect: (orgId: string) => void;
   embedded?: boolean;
+  trailingMargin?: "default" | "none";
+  hideTriggerOrgIcon?: boolean;
+  hideMenuSortIcon?: boolean;
+  textTone?: "default" | "subtle";
 }) {
   const current = organizations.find((o) => o.id === currentOrgId) ?? organizations[0];
   const label = current?.name ?? "选择组织";
@@ -41,7 +53,7 @@ export function InteractionRulesOrgSelectBar({
     <div
       className={cn(
         "flex w-full min-w-0 justify-start",
-        embedded ? "mb-0" : "mb-[var(--space-200)]",
+        embedded || trailingMargin === "none" ? "mb-0" : "mb-[var(--space-200)]",
       )}
     >
       <DropdownMenu>
@@ -53,14 +65,23 @@ export function InteractionRulesOrgSelectBar({
               "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
             )}
           >
-            <span className="relative inline-flex h-[22px] w-[22px] shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-bg">
-              <img
-                src={current?.icon || orgIcon}
-                alt=""
-                className="h-full w-full object-cover"
-              />
-            </span>
-            <span className="min-w-0 truncate text-[length:var(--font-size-base)] font-[var(--font-weight-medium)] text-text">
+            {!hideTriggerOrgIcon ? (
+              <span className="relative inline-flex h-[22px] w-[22px] shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-bg">
+                <img
+                  src={current?.icon || orgIcon}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              </span>
+            ) : null}
+            <span
+              className={cn(
+                "min-w-0 truncate",
+                textTone === "subtle"
+                  ? "text-[length:var(--font-size-xs)] font-[var(--font-weight-normal)] text-text-tertiary"
+                  : "text-[length:var(--font-size-base)] font-[var(--font-weight-medium)] text-text",
+              )}
+            >
               {label}
             </span>
             <ChevronDown className="h-[16px] w-[16px] shrink-0 text-text-tertiary" />
@@ -77,7 +98,9 @@ export function InteractionRulesOrgSelectBar({
                 onClick={() => onOrgSelect(org.id)}
                 className="flex cursor-pointer items-center gap-[var(--space-200)] px-[var(--space-300)] py-[var(--space-250)]"
               >
-                <GripVertical className="h-[14px] w-[14px] shrink-0 text-text-tertiary" />
+                {!hideMenuSortIcon ? (
+                  <GripVertical className="h-[14px] w-[14px] shrink-0 text-text-tertiary" />
+                ) : null}
                 <img
                   src={org.icon || orgIcon}
                   alt=""

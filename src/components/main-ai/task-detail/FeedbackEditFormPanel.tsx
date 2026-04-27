@@ -87,8 +87,8 @@ export function FeedbackEditFormPanel({
     item.body || "（演示）可在此补充说明与截图说明。"
   );
   const [taskTag] = React.useState(`【财务管理】-S5- ${taskName.slice(0, 12)}…`);
-  const [assigneeName] = React.useState("卫永辉");
-  const [assigneeSeed] = React.useState("wei");
+  const [assigneeName] = React.useState("王五");
+  const [assigneeSeed] = React.useState("wang");
   const [showPcTag, setShowPcTag] = React.useState(true);
   const [issueCategory] = React.useState("业务代码逻辑错误");
   const [feedbackType, setFeedbackType] = React.useState(item.feedbackType || "Bug");

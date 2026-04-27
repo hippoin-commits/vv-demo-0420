@@ -2,7 +2,7 @@ import * as React from "react";
 import ArrowTriangularArrowUnfoldPutAway from "../../imports/箭头三角箭头展开收起ArrowTriangularArrowUnfoldPutAway";
 import svgPathsFromApps from "../../imports/svg-xnt2pfgcjn";
 import { cn } from "../ui/utils";
-import { AppIcon } from "./AppIcon";
+import { AppDockEntryIcon } from "./AppIcon";
 
 function AllAppsIcon({ className = "" }: { className?: string }) {
   return (
@@ -45,7 +45,7 @@ export function OrganizationSwitcherButton({
     <button type="button" onClick={onClick} className={pillClass}>
       {currentApp ? (
         <>
-          <AppIcon imageSrc={currentApp.imageSrc} className="size-[18px]" />
+          <AppDockEntryIcon icon={{ imageSrc: currentApp.imageSrc, iconType: currentApp.iconType }} className="size-[18px]" />
           <p className="min-w-0 max-w-[min(40vw,200px)] truncate text-[length:var(--font-size-xs)] leading-none text-[var(--color-text)] font-[var(--font-weight-medium)]">
             {currentApp.name}
           </p>
