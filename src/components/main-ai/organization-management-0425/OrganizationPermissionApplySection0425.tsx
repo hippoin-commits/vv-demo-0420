@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Check, Clock3, Minus, Plus } from "lucide-react";
+import { Check, Clock3, Ellipsis, Minus, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { GenericCard } from "../GenericCard";
 import { Button } from "../../ui/button";
@@ -39,6 +39,47 @@ const FEATURE_DEFS: PermissionFeature[] = [
   { id: "income", title: "收入管理", description: "收入确认、对账、核销等流程" },
   { id: "expense", title: "支出管理", description: "支出申请、审批与归档流程" },
   { id: "budget", title: "预算管理", description: "预算详情、预算列表等管理能力" },
+];
+
+const ORG_FLOW_PERMISSION_FEATURE_ID: PermissionFeatureId = "budget";
+
+const ORG_FLOW_ROWS_0425 = [
+  {
+    id: "org-structure-change",
+    title: "组织机构变更申请",
+    iconText: "组",
+    iconClassName: "bg-destructive/15 text-destructive",
+  },
+  {
+    id: "position-system-change",
+    title: "职级体系变更申请",
+    iconText: "级",
+    iconClassName: "bg-warning/15 text-warning",
+  },
+  {
+    id: "supervisor-change",
+    title: "主管变更申请",
+    iconText: "主",
+    iconClassName: "bg-destructive/15 text-destructive",
+  },
+  {
+    id: "post-change",
+    title: "岗位变更申请",
+    iconText: "岗",
+    iconClassName: "bg-destructive/15 text-destructive",
+  },
+  {
+    id: "position-change",
+    title: "职位变更申请",
+    iconText: "职",
+    iconClassName: "bg-warning/15 text-warning",
+  },
+  {
+    id: "salary-change",
+    title: "薪酬分位变更申请",
+    iconText: "薪",
+    iconClassName: "bg-destructive/15 text-destructive",
+  },
 ];
 
 const EMPLOYEE_MENU_ROWS = [
@@ -82,12 +123,14 @@ const INITIAL_APPROVAL_FLOW_NODES: ApprovalFlowNode[] = [
 ];
 
 function StatusBadge({ status }: { status: PermissionStatus }) {
+  const iconClassName = "size-[10px] stroke-[2.5]";
+
   if (status === "pending") {
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="inline-flex size-[var(--space-400)] items-center justify-center rounded-full border border-primary text-primary">
-            <Clock3 className="size-[10px]" />
+          <span className="inline-flex size-[var(--space-400)] items-center justify-center rounded-full bg-text-tertiary text-bg shadow-sm">
+            <Clock3 className={iconClassName} />
           </span>
         </TooltipTrigger>
         <TooltipContent sideOffset={6} className="max-w-[260px] rounded-[var(--radius-200)] border border-border bg-bg px-[var(--space-250)] py-[var(--space-200)] text-[length:var(--font-size-sm)] text-text shadow-sm">
@@ -97,8 +140,16 @@ function StatusBadge({ status }: { status: PermissionStatus }) {
     );
   }
   return (
-    <span className="inline-flex size-[var(--space-400)] items-center justify-center rounded-full border border-text-tertiary text-text-tertiary">
-      <Minus className="size-[10px]" />
+    <span className="inline-flex size-[var(--space-400)] items-center justify-center rounded-full bg-text-tertiary text-bg shadow-sm">
+      <Minus className={iconClassName} />
+    </span>
+  );
+}
+
+function PermissionStatusCornerBadge({ status }: { status: PermissionStatus }) {
+  return (
+    <span className="pointer-events-none absolute right-[calc(var(--space-150)*-1)] top-[calc(var(--space-150)*-1)] z-10">
+      <StatusBadge status={status} />
     </span>
   );
 }
@@ -507,6 +558,15 @@ export function OrganizationPermissionApplySection0425(props?: {
   const activeFeature = FEATURE_DEFS.find((f) => f.id === activeFeatureId) ?? FEATURE_DEFS[0];
 
   const guideButtonLabel = submitted ? "查看权限申请单" : "申请权限";
+  const orgFlowPermissionStatus = statusByFeature[ORG_FLOW_PERMISSION_FEATURE_ID];
+
+  const handleOrgFlowRestrictedAction = React.useCallback(() => {
+    if (orgFlowPermissionStatus === "pending") {
+      openApplyDrawer(ORG_FLOW_PERMISSION_FEATURE_ID, "detail");
+      return;
+    }
+    setDialogFeatureId(ORG_FLOW_PERMISSION_FEATURE_ID);
+  }, [openApplyDrawer, orgFlowPermissionStatus]);
 
   const createTodoApprovalNode = React.useCallback((approverName: string): ApprovalFlowNode => {
     return {
@@ -570,38 +630,91 @@ export function OrganizationPermissionApplySection0425(props?: {
           titleBelowAccessory={mainAiGuideAndSettingsTitleBelow}
           className={cn("w-full max-w-none", mode === "all" ? "mt-[var(--space-400)]" : "")}
         >
-          <div className="grid grid-cols-1 gap-[var(--space-250)] md:grid-cols-2">
-            {FEATURE_DEFS.map((feature) => {
-              const status = statusByFeature[feature.id];
-              return (
-                <Tooltip key={feature.id}>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      className="relative flex min-h-[var(--space-1200)] w-full flex-col justify-center rounded-[var(--radius-md)] border border-border bg-bg px-[var(--space-300)] py-[var(--space-250)] text-left transition-colors hover:bg-bg-secondary"
-                      onClick={() => {
-                        if (status === "pending") {
-                          openApplyDrawer(feature.id, "detail");
-                          return;
-                        }
-                        setDialogFeatureId(feature.id);
-                      }}
-                    >
-                      <p className="text-[length:var(--font-size-md)] font-[var(--font-weight-medium)] text-text">{feature.title}</p>
-                      <p className="mt-[var(--space-100)] text-[length:var(--font-size-xs)] text-text-secondary">{feature.description}</p>
-                      <span className="absolute right-[var(--space-150)] top-[var(--space-150)]">
-                        <StatusBadge status={status} />
+          <div className="flex flex-col gap-[var(--space-300)]">
+            <div className="flex items-center justify-between gap-[var(--space-300)]">
+              <Input
+                readOnly
+                value=""
+                placeholder="搜索流程名称"
+                className="h-[var(--space-800)] max-w-[calc(var(--space-4000)*2)] bg-bg"
+              />
+              <button
+                type="button"
+                className="relative inline-flex h-[var(--space-800)] shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary px-[var(--space-300)] text-[length:var(--font-size-sm)] font-[var(--font-weight-medium)] text-primary-foreground transition-colors hover:bg-primary-hover"
+                onClick={handleOrgFlowRestrictedAction}
+              >
+                新增流程
+                <PermissionStatusCornerBadge status={orgFlowPermissionStatus} />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between text-[length:var(--font-size-sm)] font-[var(--font-weight-medium)] text-text">
+              <span>组织流程（6）</span>
+            </div>
+
+            <div className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-bg">
+              <div className="divide-y divide-border-divider">
+                {ORG_FLOW_ROWS_0425.map((row) => (
+                  <div
+                    key={row.id}
+                    className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1.2fr)_minmax(0,0.8fr)_auto] items-center gap-[var(--space-300)] px-[var(--space-300)] py-[var(--space-250)]"
+                  >
+                    <div className="flex min-w-0 items-center gap-[var(--space-250)]">
+                      <span
+                        className={cn(
+                          "flex size-[var(--space-600)] shrink-0 items-center justify-center rounded-[var(--radius-md)] text-[length:var(--font-size-xs)] font-[var(--font-weight-medium)]",
+                          row.iconClassName,
+                        )}
+                      >
+                        {row.iconText}
                       </span>
-                    </button>
-                  </TooltipTrigger>
-                  {status === "pending" ? (
-                    <TooltipContent sideOffset={6} className="max-w-[260px] rounded-[var(--radius-200)] border border-border bg-bg px-[var(--space-250)] py-[var(--space-200)] text-[length:var(--font-size-sm)] text-text shadow-sm">
-                      此功能正在审批，点击查看审批
-                    </TooltipContent>
-                  ) : null}
-                </Tooltip>
-              );
-            })}
+                      <span className="truncate text-[length:var(--font-size-sm)] font-[var(--font-weight-medium)] text-text">
+                        {row.title}
+                      </span>
+                    </div>
+
+                    <div className="min-w-0">
+                      <p className="text-[length:var(--font-size-sm)] text-text">适用公司</p>
+                      <p className="mt-[var(--space-50)] truncate text-[length:var(--font-size-xs)] text-text-secondary">
+                        PG北京科技有限公司及其附属公司
+                      </p>
+                    </div>
+
+                    <div className="min-w-0">
+                      <p className="text-[length:var(--font-size-sm)] text-text">流程状态</p>
+                      <p className="mt-[var(--space-50)] text-[length:var(--font-size-xs)] text-success">启用</p>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-[var(--space-250)]">
+                      {[
+                        { label: "编辑流程", Icon: Pencil },
+                        { label: "删除流程", Icon: Trash2 },
+                        { label: "更多操作", Icon: Ellipsis },
+                      ].map(({ label, Icon }) => (
+                        <Tooltip key={label}>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              aria-label={label}
+                              className="relative inline-flex size-[var(--space-700)] items-center justify-center rounded-[var(--radius-100)] text-text-tertiary transition-colors hover:bg-bg-secondary hover:text-text"
+                              onClick={handleOrgFlowRestrictedAction}
+                            >
+                              <Icon className="size-[var(--space-300)]" />
+                              <PermissionStatusCornerBadge status={orgFlowPermissionStatus} />
+                            </button>
+                          </TooltipTrigger>
+                          {orgFlowPermissionStatus === "pending" ? (
+                            <TooltipContent sideOffset={6} className="max-w-[260px] rounded-[var(--radius-200)] border border-border bg-bg px-[var(--space-250)] py-[var(--space-200)] text-[length:var(--font-size-sm)] text-text shadow-sm">
+                              此功能正在审批，点击查看审批
+                            </TooltipContent>
+                          ) : null}
+                        </Tooltip>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </GenericCard>
       )}

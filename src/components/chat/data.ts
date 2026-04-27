@@ -105,6 +105,13 @@ export const conversations: Conversation[] = [
       { id: 'm1', senderId: 'ai-writer', content: '上次的文章修改建议你看了吗？觉得如何？', timestamp: '2 days ago', createdAt: Date.now() - 172800000 },
     ]
   },
+  {
+    id: "c-organization-management-0425",
+    user: users[0],
+    unread: 0,
+    sessionTitle: "0425 组织管理演示",
+    messages: [],
+  },
   /** 0422-日程-抽屉交互细节演示：主 AI 对话内嵌「全部日程」列表卡（与 `SCHEDULE_0422_ALL_LIST_MARKER` 一致） */
   {
     id: "c-schedule-0422-demo",

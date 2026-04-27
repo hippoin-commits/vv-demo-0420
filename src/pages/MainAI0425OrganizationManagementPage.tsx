@@ -10,6 +10,7 @@ export function MainAI0425OrganizationManagementPage() {
       educationSpacePreset="familyOnly0421"
       alwaysShowIndependentWindow
       noEduSpace0421ChatToolbar
+      initialConversationId="c-organization-management-0425"
       organizationManagement0425Demo
     />
   );

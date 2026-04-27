@@ -14,10 +14,7 @@ export const DEMO_HOME_INTERACTION_RULES_ENTRY: DemoHomeNavEntry = {
 
 /** 首页主按钮对应的路由与标题 */
 export const DEMO_HOME_PRIMARY_NAV_ENTRIES: readonly DemoHomeNavEntry[] = [
-  { label: "0421-新用户-受邀加入组织", path: "/main-ai-0421-new-user-invited-org" },
-  { label: "0421-新用户-受邀加入教育空间-学生", path: "/main-ai-0421-new-user-invited-edu-student" },
-  { label: "0422-日程-抽屉交互细节演示", path: "/main-ai-0422-schedule-drawer-demo" },
-  { label: "0424-权限编辑卡片方案", path: "/main-ai-0424-permission-edit-card" },
+  { label: "0424-流程编辑卡片方案", path: "/main-ai-0424-permission-edit-card" },
   { label: "0425-案例-组织管理+权限申请", path: "/main-ai-0425-organization-management" },
 ] as const;
 
@@ -31,9 +28,12 @@ export const DEMO_HOME_ARCHIVED_NAV_ENTRIES: readonly DemoHomeNavEntry[] = [
   { label: "0417-任务-原位置编辑更新", path: "/main-ai-task-0417-inline-edit" },
   { label: "0417-任务-新卡片编辑更新", path: "/main-ai-task-0417-card-edit" },
   { label: "0419-方案探索-侧边栏", path: "/main-ai-0419-sidebar-explore" },
+  { label: "0421-新用户-受邀加入组织", path: "/main-ai-0421-new-user-invited-org" },
+  { label: "0421-新用户-受邀加入教育空间-学生", path: "/main-ai-0421-new-user-invited-edu-student" },
   { label: "0421-无组织有教育空间", path: "/main-ai" },
   { label: "0421-有组织无教育空间", path: "/main-ai-no-edu-space" },
   { label: "0421-有组织无教育空间-2", path: "/main-ai-no-edu-space-2" },
+  { label: "0422-日程-抽屉交互细节演示", path: "/main-ai-0422-schedule-drawer-demo" },
 ] as const;
 
 const ALL_DEMO_NAV_ENTRIES: readonly DemoHomeNavEntry[] = [

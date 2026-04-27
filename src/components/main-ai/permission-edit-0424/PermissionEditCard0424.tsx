@@ -5,7 +5,6 @@ import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
 import { Textarea } from "../../ui/textarea";
 import { Button } from "../../ui/button";
-import { Switch } from "../../ui/switch";
 import { Checkbox } from "../../ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "../../ui/radio-group";
 import {
@@ -382,15 +381,10 @@ export function PermissionEditCard0424({
   return (
     <>
       <GenericCard
-        title="权限编辑"
-        subtitle="预算审批流程"
+        title="编辑预算审批流程"
         titleBelowAccessory={titleBelowAccessory}
         className="w-full max-w-[min(100%,length:calc(var(--space-800)*15)))]"
       >
-        <p className="text-[length:var(--font-size-xs)] text-text-secondary">
-          演示：将原 GUI 三步向导收束为一张对话卡片；「表单设计」「流程设计」在沉浸式弹窗中操作。
-        </p>
-
         <div className="mt-[var(--space-400)] flex w-full flex-col gap-[var(--space-400)]">
           <div className="space-y-[var(--space-150)]">
             <Label className="text-[length:var(--font-size-xs)] text-text-secondary">业务类型</Label>
@@ -484,15 +478,43 @@ export function PermissionEditCard0424({
               </Select>
             </div>
             <div className="space-y-[var(--space-150)]">
-              <Label htmlFor="pe0424-cover" className="text-[length:var(--font-size-xs)] text-text-secondary">
+              <Label className="text-[length:var(--font-size-xs)] text-text-secondary">
                 是否覆盖子公司
               </Label>
               <div className="flex min-h-[var(--space-900)] items-center">
-                <Switch
-                  id="pe0424-cover"
-                  checked={form.coverSubsidiaries}
-                  onCheckedChange={(v) => setForm((s) => ({ ...s, coverSubsidiaries: v }))}
-                />
+                <button
+                  type="button"
+                  aria-pressed={form.coverSubsidiaries}
+                  onClick={() => setForm((s) => ({ ...s, coverSubsidiaries: !s.coverSubsidiaries }))}
+                  className={cn(
+                    "group relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full border border-transparent transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+                    form.coverSubsidiaries ? "bg-primary" : "bg-[var(--color-disabled)]",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "pointer-events-none absolute right-[7px] text-[12px] font-medium text-white transition-opacity",
+                      form.coverSubsidiaries ? "opacity-0" : "opacity-100",
+                    )}
+                  >
+                    关
+                  </span>
+                  <span
+                    className={cn(
+                      "pointer-events-none absolute left-[7px] text-[12px] font-medium text-white transition-opacity",
+                      form.coverSubsidiaries ? "opacity-100" : "opacity-0",
+                    )}
+                  >
+                    开
+                  </span>
+                  <span
+                    className={cn(
+                      "pointer-events-none size-[18px] rounded-full bg-white shadow-sm ring-0 transition-transform",
+                      form.coverSubsidiaries ? "translate-x-[23px]" : "translate-x-[3px]",
+                    )}
+                    aria-hidden
+                  />
+                </button>
               </div>
             </div>
             <div className="space-y-[var(--space-150)]">

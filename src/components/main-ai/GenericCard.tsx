@@ -4,6 +4,7 @@ import { cn } from "../ui/utils";
 import { OperationSourceNavContext } from "./operationSourceNavContext";
 
 export interface GenericCardProps extends React.HTMLAttributes<HTMLDivElement> {
+  className?: string;
   title: string;
   /** 与 `title` 同一行、标题右侧的补充文案（如「（已更新）」） */
   titleSuffix?: React.ReactNode;

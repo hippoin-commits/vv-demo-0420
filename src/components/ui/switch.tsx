@@ -7,6 +7,10 @@ import { Loader2 } from "lucide-react";
 import { cn } from "./utils";
 
 interface SwitchProps extends React.ComponentPropsWithoutRef<typeof SwitchPrimitive.Root> {
+  id?: string;
+  checked?: boolean;
+  defaultChecked?: boolean;
+  onCheckedChange?: (checked: boolean) => void;
   loading?: boolean;
 }
 

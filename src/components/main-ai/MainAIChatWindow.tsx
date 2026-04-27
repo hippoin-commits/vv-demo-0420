@@ -2391,6 +2391,10 @@ export function MainAIChatWindow({
     });
   }, [currentOrg, is0419Explore]);
 
+  /** 0425：主 AI、组织 AI、员工 AI 互相独立；组织/员工应用不复用主会话 `messages` */
+  const [organizationMessages0425, setOrganizationMessages0425] = React.useState<Message[]>([]);
+  const [employeeMessages0425, setEmployeeMessages0425] = React.useState<Message[]>([]);
+
   /**
    * 邮箱应用：email0413 单桶 `all`；email0415 / email0417 按「全部 / 个人 / 租户」分桶并与侧栏 mail-scope-* 会话对齐。
    */
@@ -2451,6 +2455,8 @@ export function MainAIChatWindow({
     | "task"
     | "mail"
     | "schedule"
+    | "organization"
+    | "employee"
     | "todo"
     | "meeting"
     | "disk"
@@ -2465,10 +2471,23 @@ export function MainAIChatWindow({
             ? taskMessages.length
             : surface === "mail"
               ? mailMessages.length
-              : messages.length;
+            : surface === "organization"
+                ? organizationMessages0425.length
+                : surface === "employee"
+                  ? employeeMessages0425.length
+                  : messages.length;
       armNewRoundForUserSend(surface === "main" ? null : surface, prior);
     },
-    [is0419Explore, messages, educationMessages, taskMessages, mailMessages, armNewRoundForUserSend]
+    [
+      is0419Explore,
+      messages,
+      educationMessages,
+      taskMessages,
+      mailMessages,
+      organizationMessages0425,
+      employeeMessages0425,
+      armNewRoundForUserSend,
+    ]
   );
 
   /** 0421 吸顶「受邀待办」：在当前主 AI 会话追加与 IM 点卡一致的后续流程 */
@@ -3082,7 +3101,11 @@ export function MainAIChatWindow({
           ? taskMessages
           : activeApp === "mail"
             ? mailMessages
-            : messages;
+            : activeApp === "organization" && organizationManagement0425Demo
+              ? organizationMessages0425
+              : activeApp === "employee" && organizationManagement0425Demo
+                ? employeeMessages0425
+                : messages;
 
     const sup = sameRoundScrollSuppressRef.current;
     if (sup && list.length > 0) {
@@ -3111,6 +3134,9 @@ export function MainAIChatWindow({
     educationMessages,
     taskOrgMessages,
     mailMessages,
+    organizationMessages0425,
+    employeeMessages0425,
+    organizationManagement0425Demo,
     activeApp,
     is0419Explore,
     scrollToBottom,
@@ -3144,7 +3170,11 @@ export function MainAIChatWindow({
           ? taskMessages.length
           : activeApp === "mail"
             ? mailMessages.length
-            : messages.length;
+            : activeApp === "organization" && organizationManagement0425Demo
+              ? organizationMessages0425.length
+              : activeApp === "employee" && organizationManagement0425Demo
+                ? employeeMessages0425.length
+                : messages.length;
     if (listLen <= newRoundSlot.startMessageIndex) return;
     if (newRoundScrollAppliedRef.current) return;
 
@@ -3186,6 +3216,9 @@ export function MainAIChatWindow({
     educationMessages,
     taskMessages,
     mailMessages,
+    organizationMessages0425,
+    employeeMessages0425,
+    organizationManagement0425Demo,
     activeApp,
     is0419Explore,
   ]);
@@ -3570,6 +3603,40 @@ export function MainAIChatWindow({
       interactionRulesNaturalDialogArmRef.current = false
     }
 
+    if (
+      organizationManagement0425Demo &&
+      (activeApp === "organization" || activeApp === "employee")
+    ) {
+      const appSurface = activeApp;
+      const patchAppMessages =
+        appSurface === "organization" ? setOrganizationMessages0425 : setEmployeeMessages0425;
+      beginNewUserChatRound(appSurface);
+      patchAppMessages((prev) => [...prev, newUserMessage]);
+      setInputValue("");
+
+      const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      const now = Date.now();
+      const botContent = isOrganizationManagement0425UserCommand
+        ? ORGANIZATION_MANAGEMENT_0425_MARKER
+        : isEmployeePermissionGuide0425UserCommand
+          ? ORG_EMPLOYEE_PERMISSION_GUIDE_0425_MARKER
+          : isOrgSettingsPermission0425UserCommand
+            ? ORG_SETTINGS_PERMISSION_0425_MARKER
+            : "可以继续描述组织或员工相关事项，或使用底部快捷入口打开对应能力（演示）。";
+      const botMsg: Message = {
+        id: `${appSurface}-0425-bot-${now}`,
+        senderId: conversation.user.id,
+        content: botContent,
+        timestamp: ts,
+        createdAt: now,
+        isAfterPrompt: true,
+      };
+      setTimeout(() => {
+        patchAppMessages((prev) => [...prev, botMsg]);
+      }, 500);
+      return;
+    }
+
     if (isPersonalInfoCommand) {
       const botResponse: Message = {
         id: `bot-${Date.now()}`,
@@ -3780,11 +3847,13 @@ export function MainAIChatWindow({
     setMessages(prev => [...prev, newFormMsg])
   }
 
-  const appendOrganizationManagement0425Card = React.useCallback(() => {
-    beginNewUserChatRound("main");
+  const appendOrganizationManagement0425Card = React.useCallback((target?: "main" | "organization") => {
+    const surface = target ?? (activeApp === "organization" ? "organization" : "main");
+    const patchMessages = surface === "organization" ? setOrganizationMessages0425 : setMessages;
+    beginNewUserChatRound(surface);
     const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     const now = Date.now();
-    setMessages((prev) => [
+    patchMessages((prev) => [
       ...prev,
       {
         id: `org-management-0425-user-${now}`,
@@ -3802,13 +3871,15 @@ export function MainAIChatWindow({
         isAfterPrompt: true,
       },
     ]);
-  }, [beginNewUserChatRound, conversation.user.id]);
+  }, [activeApp, beginNewUserChatRound, conversation.user.id]);
 
-  const appendEmployeePermissionGuide0425Card = React.useCallback(() => {
-    beginNewUserChatRound("main");
+  const appendEmployeePermissionGuide0425Card = React.useCallback((target?: "main" | "employee") => {
+    const surface = target ?? (activeApp === "employee" ? "employee" : "main");
+    const patchMessages = surface === "employee" ? setEmployeeMessages0425 : setMessages;
+    beginNewUserChatRound(surface);
     const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     const now = Date.now();
-    setMessages((prev) => [
+    patchMessages((prev) => [
       ...prev,
       {
         id: `employee-permission-guide-0425-${now}`,
@@ -3819,13 +3890,15 @@ export function MainAIChatWindow({
         isAfterPrompt: true,
       },
     ]);
-  }, [beginNewUserChatRound, conversation.user.id]);
+  }, [activeApp, beginNewUserChatRound, conversation.user.id]);
 
-  const appendOrgSettingsPermission0425Card = React.useCallback(() => {
-    beginNewUserChatRound("main");
+  const appendOrgSettingsPermission0425Card = React.useCallback((target?: "main" | "organization") => {
+    const surface = target ?? (activeApp === "organization" ? "organization" : "main");
+    const patchMessages = surface === "organization" ? setOrganizationMessages0425 : setMessages;
+    beginNewUserChatRound(surface);
     const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     const now = Date.now();
-    setMessages((prev) => [
+    patchMessages((prev) => [
       ...prev,
       {
         id: `org-settings-0425-${now}`,
@@ -3836,7 +3909,25 @@ export function MainAIChatWindow({
         isAfterPrompt: true,
       },
     ]);
-  }, [beginNewUserChatRound, conversation.user.id]);
+  }, [activeApp, beginNewUserChatRound, conversation.user.id]);
+
+  /**
+   * 0425：从主 AI 进入「员工」应用时，顺带插入权限申请引导卡，避免用户再点一次底栏「员工权限申请」。
+   */
+  const tryEnterWorkbenchAppWith0425EmployeeAuto = React.useCallback(
+    (appId: string) => {
+      const result = tryEnterWorkbenchApp(appId);
+      if (organizationManagement0425Demo && appId === "employee" && result === true) {
+        appendEmployeePermissionGuide0425Card("employee");
+      }
+      return result;
+    },
+    [
+      tryEnterWorkbenchApp,
+      organizationManagement0425Demo,
+      appendEmployeePermissionGuide0425Card,
+    ],
+  );
 
   // Organization handlers
   const handleOrgClick = () => {
@@ -3861,6 +3952,12 @@ export function MainAIChatWindow({
     } else if (activeApp === "schedule") {
       beginNewUserChatRound("schedule");
       setMessages((prev) => [...prev, orgSwitcherMsg]);
+    } else if (activeApp === "organization" && organizationManagement0425Demo) {
+      beginNewUserChatRound("organization");
+      setOrganizationMessages0425((prev) => [...prev, orgSwitcherMsg]);
+    } else if (activeApp === "employee" && organizationManagement0425Demo) {
+      beginNewUserChatRound("employee");
+      setEmployeeMessages0425((prev) => [...prev, orgSwitcherMsg]);
     } else {
       beginNewUserChatRound("main");
       setMessages((prev) => [...prev, orgSwitcherMsg]);
@@ -4424,7 +4521,11 @@ export function MainAIChatWindow({
           ? taskMessages.length
           : activeApp === "mail"
             ? mailMessages.length
-            : messages.length;
+            : activeApp === "organization" && organizationManagement0425Demo
+              ? organizationMessages0425.length
+              : activeApp === "employee" && organizationManagement0425Demo
+                ? employeeMessages0425.length
+                : messages.length;
     const slotKey =
       newRoundSlot == null
         ? "0"
@@ -4437,6 +4538,9 @@ export function MainAIChatWindow({
     educationMessages.length,
     taskMessages.length,
     mailMessages.length,
+    organizationMessages0425.length,
+    employeeMessages0425.length,
+    organizationManagement0425Demo,
     newRoundSlot,
   ]);
 
@@ -4466,7 +4570,7 @@ export function MainAIChatWindow({
 
   const renderMessageList = (
     messagesList: Message[],
-    appContext: "main" | "education" | "task" | "mail" | "schedule",
+    appContext: "main" | "education" | "task" | "mail" | "schedule" | "organization" | "employee",
     /** null：不在此列表挂锚点（如独立浮窗内列表，避免与主会话 ref 冲突） */
     listAnchorRef: React.MutableRefObject<HTMLDivElement | null> | null | undefined = undefined,
     slotWrapConfig: {
@@ -4536,6 +4640,8 @@ export function MainAIChatWindow({
     const patchMessages = (fn: (prev: Message[]) => Message[]) => {
       if (appContext === "education") setEducationMessages(fn);
       else if (appContext === "task") setTaskMessages(fn);
+      else if (appContext === "organization") setOrganizationMessages0425(fn);
+      else if (appContext === "employee") setEmployeeMessages0425(fn);
       else setMessages(fn);
     };
 
@@ -4554,7 +4660,11 @@ export function MainAIChatWindow({
               ? "task"
               : appContext === "mail"
                 ? "mail"
-                : "schedule";
+                : appContext === "organization"
+                  ? "organization"
+                  : appContext === "employee"
+                    ? "employee"
+                    : "schedule";
       beginNewUserChatRound(roundSurface);
       patchMessages(fn);
     };
@@ -7200,14 +7310,16 @@ export function MainAIChatWindow({
                 avatarSrc={conversation.user.avatar}
                 greeting="你好，我是你的组织专属 AI 助手。可以用快捷入口打开组织管理，或直接描述组织相关事项。"
               />
-              <div className="flex flex-wrap gap-[var(--space-200)] w-full md:ml-[44px]">
-                <ChatPromptButton type="button" onClick={appendOrganizationManagement0425Card}>
-                  组织管理
-                </ChatPromptButton>
-                <ChatPromptButton type="button" onClick={handleOrgClick}>
-                  切换组织
-                </ChatPromptButton>
-              </div>
+              {organizationMessages0425.length === 0 ? (
+                <div className="flex flex-wrap gap-[var(--space-200)] w-full md:ml-[44px]">
+                  <ChatPromptButton type="button" onClick={() => appendOrganizationManagement0425Card("organization")}>
+                    组织管理
+                  </ChatPromptButton>
+                  <ChatPromptButton type="button" onClick={handleOrgClick}>
+                    切换组织
+                  </ChatPromptButton>
+                </div>
+              ) : null}
             </div>
           ) : activeApp === "employee" && organizationManagement0425Demo ? (
             <div className="flex w-full flex-col gap-[var(--space-200)]">
@@ -7215,14 +7327,16 @@ export function MainAIChatWindow({
                 avatarSrc={conversation.user.avatar}
                 greeting="你好，我是你的员工专属 AI 助手。可用底部快捷入口发起权限申请，或直接描述员工相关事项。"
               />
-              <div className="flex flex-wrap gap-[var(--space-200)] w-full md:ml-[44px]">
-                <ChatPromptButton type="button" onClick={appendEmployeePermissionGuide0425Card}>
-                  员工权限申请
-                </ChatPromptButton>
-                <ChatPromptButton type="button" onClick={handleOrgClick}>
-                  切换组织
-                </ChatPromptButton>
-              </div>
+              {employeeMessages0425.length === 0 ? (
+                <div className="flex flex-wrap gap-[var(--space-200)] w-full md:ml-[44px]">
+                  <ChatPromptButton type="button" onClick={() => appendEmployeePermissionGuide0425Card("employee")}>
+                    员工权限申请
+                  </ChatPromptButton>
+                  <ChatPromptButton type="button" onClick={handleOrgClick}>
+                    切换组织
+                  </ChatPromptButton>
+                </div>
+              ) : null}
             </div>
           ) : invite0421DockFlow &&
             !(hasOrganization || workbenchOrgGateReleased) &&
@@ -7270,6 +7384,24 @@ export function MainAIChatWindow({
             <div className="flex w-full flex-col gap-[var(--space-500)]">
               {renderMessageList(messages, "schedule", undefined, newRoundSlotWrapForActiveView)}
             </div>
+          ) : activeApp === "organization" && organizationManagement0425Demo ? (
+            <div className="flex w-full flex-col gap-[var(--space-500)]">
+              {renderMessageList(
+                organizationMessages0425,
+                "organization",
+                undefined,
+                newRoundSlotWrapForActiveView
+              )}
+            </div>
+          ) : activeApp === "employee" && organizationManagement0425Demo ? (
+            <div className="flex w-full flex-col gap-[var(--space-500)]">
+              {renderMessageList(
+                employeeMessages0425,
+                "employee",
+                undefined,
+                newRoundSlotWrapForActiveView
+              )}
+            </div>
           ) : (
             renderMessageList(
               activeApp === "education" ? (is0419Explore ? messages : educationMessages) : messages,
@@ -7306,7 +7438,7 @@ export function MainAIChatWindow({
           addedApps={invite0421AllAppsSplit?.added ?? []}
           unaddedApps={invite0421AllAppsSplit?.unadded ?? []}
           onAppClick={(appId) => {
-            tryEnterWorkbenchApp(appId);
+            tryEnterWorkbenchAppWith0425EmployeeAuto(appId);
           }}
         />
 
@@ -7776,11 +7908,11 @@ export function MainAIChatWindow({
                     app={app}
                     onMenuClick={(_menu, appName, appId) => {
                       if (appId === "org_management") {
-                        appendOrganizationManagement0425Card();
+                        appendOrganizationManagement0425Card("organization");
                         return;
                       }
                       if (appId === "org_settings") {
-                        appendOrgSettingsPermission0425Card();
+                        appendOrgSettingsPermission0425Card("organization");
                         return;
                       }
                       toast(`${appName}入口已打开（演示占位）`);
@@ -7821,7 +7953,7 @@ export function MainAIChatWindow({
                     app={app}
                     onMenuClick={(menu, appName, appId) => {
                       if (menu === "__direct__" && appId === "emp_permission_apply") {
-                        appendEmployeePermissionGuide0425Card();
+                        appendEmployeePermissionGuide0425Card("employee");
                         return;
                       }
                       toast(`${appName}入口已打开（演示占位）`);
@@ -7919,7 +8051,7 @@ export function MainAIChatWindow({
                           !(hasOrganization || workbenchOrgGateReleased) &&
                           (INVITE0421_NO_ORG_DOCK_APP_IDS_ORDERED as readonly string[]).includes(app.id))
                       ) {
-                        tryEnterWorkbenchApp(app.id);
+                        tryEnterWorkbenchAppWith0425EmployeeAuto(app.id);
                       }
                     }}
                     onMouseDown={(e) => {
@@ -7968,7 +8100,7 @@ export function MainAIChatWindow({
                       type="button"
                       key="mail-dock-slot"
                       onClick={() => {
-                        tryEnterWorkbenchApp("mail");
+                        tryEnterWorkbenchAppWith0425EmployeeAuto("mail");
                       }}
                       className="bg-bg flex gap-[var(--space-100)] h-[var(--space-800)] items-center px-[var(--space-300)] py-[var(--space-150)] rounded-full shrink-0 hover:bg-[var(--black-alpha-11)] transition-all duration-300 ease-out border border-border select-none cursor-pointer"
                     >
