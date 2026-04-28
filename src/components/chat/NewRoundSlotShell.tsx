@@ -3,7 +3,7 @@ import { motion } from "motion/react";
 import { cn } from "../ui/utils";
 
 export type NewRoundSlotShellProps = {
-  /** 槽位固定高度（一般为一屏对话区 clientHeight） */
+  /** 槽位固定高度（统一由 `computeNewRoundSlotHeightPx` 按可用阅读区 70% 计算） */
   heightPx: number;
   /** 与主对话列表消息之间的纵向间距 token 一致（主 AI 用户↔系统为 `--space-600`） */
   messageGapClassName?: string;

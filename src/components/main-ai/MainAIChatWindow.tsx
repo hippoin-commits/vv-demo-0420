@@ -136,6 +136,7 @@ import type { MailDemoScenarioId } from "./MailDemoScenarioDropdown"
 import { parseGenericCardPayloadJson } from "./chatCardPayloadSafety"
 import {
   INVITE0421_NO_ORG_DOCK_APP_IDS_ORDERED,
+  INVITE0421_ORG_DOCK_APP_IDS_ORDERED,
   INVITE0421_PERSONAL_APP_IDS,
   INVITE0421_WORKBENCH_APP_IDS,
 } from "../../constants/invite0421Workbench"
@@ -179,6 +180,7 @@ import { PermissionEditCard0424, PermissionDetailCard0424 } from "./permission-e
 import {
   ORGANIZATION_MANAGEMENT_0425_DEFAULT_INPUT_PROMPT,
   ORGANIZATION_MANAGEMENT_0425_MARKER,
+  ORGANIZATION_MANAGEMENT_0425_SCHEME2_INPUT_PROMPT,
   ORGANIZATION_MANAGEMENT_0425_USER_TRIGGER,
 } from "../../constants/organizationManagement0425"
 import { OrganizationManagementCard0425 } from "./organization-management-0425/OrganizationManagementCard0425"
@@ -224,7 +226,7 @@ export interface AppItem {
   order: number;
 }
 
-const DATA_VERSION = 20;
+const DATA_VERSION = 21;
 
 export const INITIAL_APPS: AppItem[] = [
   {
@@ -344,6 +346,102 @@ export const INITIAL_APPS: AppItem[] = [
     },
     order: 15,
   },
+  {
+    id: 'attendance',
+    name: '考勤',
+    icon: { imageSrc: membersIcon, iconType: 'attendance' },
+    order: 16,
+  },
+  {
+    id: 'performance',
+    name: '绩效',
+    icon: { imageSrc: financeIcon, iconType: 'performance' },
+    order: 17,
+  },
+  {
+    id: 'policy',
+    name: '制度',
+    icon: { imageSrc: courseIcon, iconType: 'policy' },
+    order: 18,
+  },
+  {
+    id: 'material',
+    name: '物资',
+    icon: { imageSrc: goodsIcon, iconType: 'material' },
+    order: 19,
+  },
+  {
+    id: 'onboarding',
+    name: '入职',
+    icon: { imageSrc: employeeIcon, iconType: 'onboarding' },
+    order: 20,
+  },
+  {
+    id: 'regularization',
+    name: '转正',
+    icon: { imageSrc: employeeIcon, iconType: 'regularization' },
+    order: 21,
+  },
+  {
+    id: 'transfer',
+    name: '调岗',
+    icon: { imageSrc: salaryIcon, iconType: 'transfer' },
+    order: 22,
+  },
+  {
+    id: 'resignation',
+    name: '离职',
+    icon: { imageSrc: salaryIcon, iconType: 'resignation' },
+    order: 23,
+  },
+  {
+    id: 'contract',
+    name: '合同',
+    icon: { imageSrc: courseIcon, iconType: 'contract' },
+    order: 24,
+  },
+  {
+    id: 'goal',
+    name: '目标',
+    icon: { imageSrc: aiModelIcon, iconType: 'goal' },
+    order: 25,
+  },
+  {
+    id: 'project',
+    name: '项目',
+    icon: { imageSrc: goodsIcon, iconType: 'project' },
+    order: 26,
+  },
+  {
+    id: 'feedback',
+    name: '反馈',
+    icon: { imageSrc: salaryIcon, iconType: 'feedback' },
+    order: 27,
+  },
+  {
+    id: 'meeting_room',
+    name: '会议室',
+    icon: { imageSrc: meetingIcon, iconType: 'meeting_room' },
+    order: 28,
+  },
+  {
+    id: 'workflow',
+    name: '流程',
+    icon: { imageSrc: companyIcon, iconType: 'workflow' },
+    order: 29,
+  },
+  {
+    id: 'permission',
+    name: '权限',
+    icon: { imageSrc: organizationIcon, iconType: 'permission' },
+    order: 30,
+  },
+  {
+    id: 'customer',
+    name: '客户',
+    icon: { imageSrc: profileIcon, iconType: 'customer' },
+    order: 31,
+  },
 ];
 
 /** 仅「0413-邮箱-方案1」「0415-邮箱-在抽屉查看邮件内容」底栏插入，排在「任务」后；不入库默认 INITIAL_APPS，避免其它入口出现邮箱 */
@@ -378,6 +476,13 @@ function resolveDockAppItem(id: string, apps: AppItem[]): AppItem | undefined {
 /** 0421 无组织：主底栏与抽屉「已添加」共用此 7 项顺序 */
 function buildInvite0421NoOrgDockApps(apps: AppItem[]): AppItem[] {
   return INVITE0421_NO_ORG_DOCK_APP_IDS_ORDERED.map((id) => resolveDockAppItem(id, apps)).filter(
+    (x): x is AppItem => x != null,
+  )
+}
+
+/** 0421 有组织 / 演示租户已选：7 个个人应用 + 工作台应用 */
+function buildInvite0421OrgDockApps(apps: AppItem[]): AppItem[] {
+  return INVITE0421_ORG_DOCK_APP_IDS_ORDERED.map((id) => resolveDockAppItem(id, apps)).filter(
     (x): x is AppItem => x != null,
   )
 }
@@ -514,6 +619,8 @@ interface MainAIChatWindowProps {
   organizationManagement0425Demo?: boolean
   /** 0425 页面右上角指令集：递增时将组织管理指令填入当前输入框 */
   organizationManagement0425CommandNonce?: number
+  /** 0425 页面右上角指令集：递增时将组织管理方案2指令填入当前输入框 */
+  organizationManagement0425Scheme2CommandNonce?: number
 }
 
 function taskEntryIsMailDockFamily(
@@ -548,6 +655,7 @@ const TASK_TABLE_MARKER = "<<<RENDER_TASK_TABLE>>>"
 const CREATE_TASK_FORM_MARKER = "<<<RENDER_CREATE_TASK_FORM>>>"
 const TASK_DRAFTS_TABLE_MARKER = "<<<RENDER_TASK_DRAFTS_TABLE>>>"
 const TASK_DETAIL_MARKER = "<<<RENDER_TASK_DETAIL_CARD>>>"
+const IN_PLACE_CARD_UPDATE_POSITIONING_DEMO_PROMPT = "查看任务 Q2 产品路线图评审，卡片原位置更新定位演示"
 const TASK_FILTER_MARKER = "<<<RENDER_TASK_FILTER_CARD>>>"
 const TASK_SETTINGS_MARKER = "<<<RENDER_TASK_SETTINGS_CARD>>>"
 const EDIT_TASK_FORM_MARKER = "<<<RENDER_EDIT_TASK_FORM>>>"
@@ -797,6 +905,29 @@ function computeScrollTopToAlignElementTopBelowPin(
 ): number {
   const usePin = pinEl != null && container.contains(pinEl);
   const anchorTop = usePin ? pinEl.getBoundingClientRect().bottom : container.getBoundingClientRect().top;
+  const elRect = el.getBoundingClientRect();
+  const raw = container.scrollTop + (elRect.top - anchorTop);
+  const maxTop = Math.max(0, container.scrollHeight - container.clientHeight);
+  return Math.max(0, Math.min(raw, maxTop));
+}
+
+function computeScrollTopToAlignElementTopAtSlotTop(
+  container: HTMLElement,
+  el: HTMLElement,
+  pinEl: HTMLElement | null,
+  demoInstructionShell: boolean
+): number {
+  const usePin = pinEl != null && container.contains(pinEl);
+  const containerTop = container.getBoundingClientRect().top;
+  const pinBottom = usePin ? pinEl.getBoundingClientRect().bottom : containerTop;
+  const pinOffsetPx = Math.max(0, pinBottom - containerTop);
+  const slotHeightPx = computeNewRoundSlotHeightPx({
+    chatClientHeight: container.clientHeight,
+    pinOverlayHeight: pinOffsetPx,
+    demoInstructionShell,
+  });
+  const slotTopOffsetPx = Math.max(0, container.clientHeight - pinOffsetPx - slotHeightPx);
+  const anchorTop = pinBottom + slotTopOffsetPx;
   const elRect = el.getBoundingClientRect();
   const raw = container.scrollTop + (elRect.top - anchorTop);
   const maxTop = Math.max(0, container.scrollHeight - container.clientHeight);
@@ -1645,21 +1776,41 @@ function shouldShowTimestamp(current: Message, previous: Message | null): boolea
   return diffInMins > 20;
 }
 
-function buildOrganizationManagement0425Marker(orgId: string): string {
-  return `${ORGANIZATION_MANAGEMENT_0425_MARKER}:${JSON.stringify({ orgId })}`;
+type OrganizationManagement0425ScopeLayout = "inCard" | "outsideCard";
+
+type OrganizationManagement0425MarkerPayload = {
+  orgId?: string;
+  scopeLayout?: OrganizationManagement0425ScopeLayout;
+};
+
+function buildOrganizationManagement0425Marker(
+  orgId: string,
+  options?: { scopeLayout?: OrganizationManagement0425ScopeLayout },
+): string {
+  return `${ORGANIZATION_MANAGEMENT_0425_MARKER}:${JSON.stringify({
+    orgId,
+    ...(options?.scopeLayout ? { scopeLayout: options.scopeLayout } : {}),
+  })}`;
 }
 
-function parseOrganizationManagement0425MarkerOrgId(content: unknown): string | null {
+function parseOrganizationManagement0425MarkerPayload(
+  content: unknown,
+): OrganizationManagement0425MarkerPayload | null {
   if (typeof content !== "string") return null;
   if (!content.startsWith(ORGANIZATION_MANAGEMENT_0425_MARKER)) return null;
   const raw = content.slice(ORGANIZATION_MANAGEMENT_0425_MARKER.length);
-  if (!raw.startsWith(":")) return null;
+  if (!raw.startsWith(":")) return {};
   try {
-    const payload = JSON.parse(raw.slice(1)) as { orgId?: unknown };
-    return typeof payload.orgId === "string" && payload.orgId ? payload.orgId : null;
+    const payload = JSON.parse(raw.slice(1)) as OrganizationManagement0425MarkerPayload;
+    return payload && typeof payload === "object" ? payload : {};
   } catch {
-    return null;
+    return {};
   }
+}
+
+function parseOrganizationManagement0425MarkerOrgId(content: unknown): string | null {
+  const payload = parseOrganizationManagement0425MarkerPayload(content);
+  return typeof payload?.orgId === "string" && payload.orgId ? payload.orgId : null;
 }
 
 function FloatingAppWindow({
@@ -1810,6 +1961,7 @@ export function MainAIChatWindow({
   permissionEditCard0424Demo = false,
   organizationManagement0425Demo = false,
   organizationManagement0425CommandNonce = 0,
+  organizationManagement0425Scheme2CommandNonce = 0,
 }: MainAIChatWindowProps) {
   const invite0421DockFlow = invite0421NewUserFlow || invite0421EduStudentFlow;
   /** 避免 `tryEnterWorkbenchApp` 随 `activeApp` 变引用后，effect 误重复打开教育应用（如底栏「返回」后主 AI 立刻被拉回教育） */
@@ -2037,7 +2189,7 @@ export function MainAIChatWindow({
   }, [scrollPanelToBottom]);
 
   /**
-   * 新出「对话区卡片」时：将该消息行顶部对齐到可视顶（0419/主 AI 下为吸顶卡片底边），300ms 过渡。
+   * 新出「对话区卡片」时：将该消息行顶部对齐到 70% 阅读槽位顶部，300ms 过渡。
    */
   const scrollLatestCardRowToTop = React.useCallback((el: HTMLElement | null) => {
     if (!el) return;
@@ -2060,30 +2212,36 @@ export function MainAIChatWindow({
       return;
     }
     const pin = pinnedTaskStickyRef.current;
-    const target = computeScrollTopToAlignElementTopBelowPin(container, el, pin);
+    const target = computeScrollTopToAlignElementTopAtSlotTop(container, el, pin, demoInstructionShell);
     animateContainerScrollTop(
       container,
       target,
       CHAT_SCROLL_ALIGN_DURATION_MS,
       chatScrollAlignRafRef,
       () => {
-        const t = computeScrollTopToAlignElementTopBelowPin(container, el, pinnedTaskStickyRef.current);
+        const t = computeScrollTopToAlignElementTopAtSlotTop(
+          container,
+          el,
+          pinnedTaskStickyRef.current,
+          demoInstructionShell
+        );
         if (Math.abs(container.scrollTop - t) > 1) {
           container.scrollTop = t;
         }
       }
     );
-  }, [is0419Explore, activeApp]);
+  }, [is0419Explore, activeApp, demoInstructionShell]);
 
   const forceAlignNewRoundAnchorToTop = React.useCallback(() => {
     const run = () => {
       const container = chatContainerRef.current;
       const anchor = newRoundShellRef.current ?? latestMessageRowRef.current;
       if (!container || !anchor) return;
-      const target = computeScrollTopToAlignElementTopBelowPin(
+      const target = computeScrollTopToAlignElementTopAtSlotTop(
         container,
         anchor,
         pinnedTaskStickyRef.current,
+        demoInstructionShell,
       );
       animateContainerScrollTop(
         container,
@@ -2093,7 +2251,7 @@ export function MainAIChatWindow({
       );
     };
     requestAnimationFrame(() => requestAnimationFrame(run));
-  }, []);
+  }, [demoInstructionShell]);
 
   /** 点击「操作来源」时滚动到对应消息行（依赖 data-message-id）；固定 300ms 插值过渡 */
   const scrollToMessageById = React.useCallback((messageId: string) => {
@@ -2285,29 +2443,51 @@ export function MainAIChatWindow({
     saveAppsToStorage(reorderedApps);
   };
 
-  /** 「全部应用」抽屉：与底栏一致在「任务」后插入邮箱（邮箱方案页）；排序落库时剔除 mail */
-  const appsForAllAppsDrawer = React.useMemo(() => {
+  /**
+   * 主 AI 底栏 / 更多应用浮层 / 应用 AI 切换应用浮层共用同一份排序来源。
+   * 邮箱方案页仍按历史规则在「任务」后插入邮箱。
+   */
+  const appsForUnifiedAppEntryOrder = React.useMemo(() => {
+    const hasSelectedTenant = hasOrganization || (demoInstructionShell && organizationManagement0425Demo);
+    if (invite0421DockFlow) {
+      return hasSelectedTenant ? buildInvite0421OrgDockApps(apps) : buildInvite0421NoOrgDockApps(apps);
+    }
     if (!taskEntryIsMailDockFamily(taskEntryVariant)) return apps;
     const taskIdx = apps.findIndex((a) => a.id === "task");
     if (taskIdx < 0) return [...apps, MAIL_APP_DOCK_ITEM];
     const next = [...apps];
     next.splice(taskIdx + 1, 0, MAIL_APP_DOCK_ITEM);
     return next;
-  }, [apps, taskEntryVariant]);
+  }, [
+    apps,
+    demoInstructionShell,
+    hasOrganization,
+    invite0421DockFlow,
+    organizationManagement0425Demo,
+    taskEntryVariant,
+  ]);
 
-  /** 0421 新用户：无组织时主底栏固定 7 项顺序（教育→待办→日程→会议→邮箱→文档→微盘）；有组织后恢复完整列表 */
+  /** 「全部应用」抽屉：与主 AI 底栏、应用 AI 切换应用浮层保持同源排序 */
+  const appsForAllAppsDrawer = appsForUnifiedAppEntryOrder;
+
+  /**
+   * 0421 / 交互演示：
+   * - 无组织：主底栏固定 7 个个人应用（教育→待办→日程→会议→邮箱→文档→微盘）。
+   * - 有组织或演示页已选租户：个人 7 个 + 工作台应用，工作台应用排在个人应用之后。
+   */
   const appsForMainAIDockPills = React.useMemo(() => {
-    if (!invite0421DockFlow || hasOrganization) return apps;
-    return buildInvite0421NoOrgDockApps(apps);
-  }, [apps, invite0421DockFlow, hasOrganization]);
+    if (!invite0421DockFlow) return appsForUnifiedAppEntryOrder;
+    return appsForUnifiedAppEntryOrder;
+  }, [appsForUnifiedAppEntryOrder, invite0421DockFlow]);
 
   /** 0421：已添加 = 无组织 7 项（顺序同上）；未添加 = 工作台应用（与 Guidelines 分类一致） */
   const invite0421AllAppsSplit = React.useMemo(() => {
-    if (!invite0421DockFlow || hasOrganization) return null;
+    const hasSelectedTenant = hasOrganization || (demoInstructionShell && organizationManagement0425Demo);
+    if (!invite0421DockFlow || hasSelectedTenant) return null;
     const added = buildInvite0421NoOrgDockApps(apps);
     const unadded = appsForAllAppsDrawer.filter((a) => INVITE0421_WORKBENCH_APP_IDS.has(a.id));
     return { added, unadded };
-  }, [invite0421DockFlow, hasOrganization, apps, appsForAllAppsDrawer]);
+  }, [invite0421DockFlow, hasOrganization, demoInstructionShell, organizationManagement0425Demo, apps, appsForAllAppsDrawer]);
 
   /** 0421 无组织壳：日程（非 0422 抽屉演示）与待办/会议/文档/微盘等占位应用底栏（返回 + 全部应用） */
   const invite0421NoOrgShellPersonalDock = React.useMemo(
@@ -2854,10 +3034,39 @@ export function MainAIChatWindow({
     (messageId: string) => {
       skipNextChatLayoutScrollRef.current = true;
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => scrollToMessageById(messageId));
+        requestAnimationFrame(() => {
+          try {
+            const escaped =
+              typeof CSS !== "undefined" && typeof CSS.escape === "function"
+                ? CSS.escape(messageId)
+                : messageId.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+            const root = chatContainerRef.current;
+            const el = (root?.querySelector(`[data-message-id="${escaped}"]`) ??
+              document.querySelector(`[data-message-id="${escaped}"]`)) as HTMLElement | null;
+            const container = el?.closest(".overflow-y-auto") as HTMLElement | null;
+            if (!el || !container) {
+              scrollToMessageById(messageId);
+              return;
+            }
+            const target = computeScrollTopToAlignElementTopAtSlotTop(
+              container,
+              el,
+              pinnedTaskStickyRef.current,
+              demoInstructionShell
+            );
+            animateContainerScrollTop(
+              container,
+              target,
+              CHAT_SCROLL_ALIGN_DURATION_MS,
+              chatScrollAlignRafRef
+            );
+          } catch {
+            scrollToMessageById(messageId);
+          }
+        });
       });
     },
-    [scrollToMessageById]
+    [demoInstructionShell, scrollToMessageById]
   );
 
   const updateMailMessages = React.useCallback(
@@ -3200,7 +3409,7 @@ export function MainAIChatWindow({
     is0419Explore,
   ]);
 
-  /** 新一轮对话：先动画滚至槽内底（留白），再动画将槽顶对齐吸顶卡片底边（共 300ms） */
+  /** 新一轮对话：先动画滚至槽内底（留白），再动画将槽顶对齐 70% 阅读槽位顶部（共 300ms） */
   React.useLayoutEffect(() => {
     if (!newRoundSlot) {
       newRoundScrollAppliedRef.current = false;
@@ -3249,7 +3458,7 @@ export function MainAIChatWindow({
       }
       /**
        * 保险：若槽位在 phase1 期间被 onContentExceedsSlot 释放，shellRef 已 null，
-       * 退回「最后一条消息行顶对齐吸顶下缘」，保证本轮新卡片顶部对齐视口顶。
+       * 退回「最后一条消息行顶对齐阅读槽位顶部」，保证本轮新卡片遵循 70% 槽位。
        */
       if (!s) {
         const anchor = latestMessageRowRef.current;
@@ -3257,7 +3466,7 @@ export function MainAIChatWindow({
         newRoundScrollAppliedRef.current = true;
         return;
       }
-      const alignTarget = computeScrollTopToAlignElementTopBelowPin(c, s, p);
+      const alignTarget = computeScrollTopToAlignElementTopAtSlotTop(c, s, p, demoInstructionShell);
       animateContainerScrollTop(c, alignTarget, halfMs, chatScrollAlignRafRef, () => {
         newRoundScrollAppliedRef.current = true;
       });
@@ -3273,6 +3482,7 @@ export function MainAIChatWindow({
     organizationMessages0425,
     employeeMessages0425,
     organizationManagement0425Demo,
+    demoInstructionShell,
     activeApp,
     is0419Explore,
   ]);
@@ -3399,6 +3609,15 @@ export function MainAIChatWindow({
     })
     return () => cancelAnimationFrame(id)
   }, [organizationManagement0425Demo, organizationManagement0425CommandNonce])
+
+  React.useEffect(() => {
+    if (!organizationManagement0425Demo || !organizationManagement0425Scheme2CommandNonce) return
+    setInputValue(ORGANIZATION_MANAGEMENT_0425_SCHEME2_INPUT_PROMPT)
+    const id = requestAnimationFrame(() => {
+      document.getElementById("main-ai-composer-input")?.focus()
+    })
+    return () => cancelAnimationFrame(id)
+  }, [organizationManagement0425Demo, organizationManagement0425Scheme2CommandNonce])
 
   React.useEffect(() => {
     if (!demoInstructionShell || !organizationManagement0425Demo) return;
@@ -3537,6 +3756,34 @@ export function MainAIChatWindow({
             id: `bot-ir-biz-card-${now}`,
             senderId: conversation.user.id,
             content: `<<<RENDER_GENERIC_CARD>>>:${cardData}`,
+            timestamp: ts,
+            createdAt: now,
+            isAfterPrompt: true,
+          },
+        ])
+      }, 480)
+      return
+    }
+
+    if (activeApp === null && inputValue.trim() === IN_PLACE_CARD_UPDATE_POSITIONING_DEMO_PROMPT) {
+      beginNewUserChatRound("main")
+      setMessages((prev) => [...prev, newUserMessage])
+      setInputValue("")
+      setTimeout(() => {
+        const ts = new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+        const now = Date.now()
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `bot-in-place-task-detail-${now}`,
+            senderId: conversation.user.id,
+            content: `${TASK_DETAIL_MARKER}:${JSON.stringify({
+              id: "t-101",
+              layoutVariant: "inPlaceUpdatePositioningDemo",
+            })}`,
             timestamp: ts,
             createdAt: now,
             isAfterPrompt: true,
@@ -3703,7 +3950,11 @@ export function MainAIChatWindow({
       organizationManagement0425Demo &&
       (activeApp === null || activeApp === "organization" || activeApp === "employee") &&
       (inputValue.includes(ORGANIZATION_MANAGEMENT_0425_USER_TRIGGER) ||
-        inputValue.includes(ORGANIZATION_MANAGEMENT_0425_DEFAULT_INPUT_PROMPT))
+        inputValue.includes(ORGANIZATION_MANAGEMENT_0425_DEFAULT_INPUT_PROMPT) ||
+        inputValue.includes(ORGANIZATION_MANAGEMENT_0425_SCHEME2_INPUT_PROMPT))
+    const isOrganizationManagement0425Scheme2Command =
+      organizationManagement0425Demo &&
+      inputValue.includes(ORGANIZATION_MANAGEMENT_0425_SCHEME2_INPUT_PROMPT)
     const isEmployeePermissionGuide0425UserCommand =
       organizationManagement0425Demo &&
       (activeApp === null || activeApp === "employee") &&
@@ -3743,7 +3994,9 @@ export function MainAIChatWindow({
       const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
       const now = Date.now();
       const botContent = isOrganizationManagement0425UserCommand
-        ? buildOrganizationManagement0425Marker(currentOrg)
+        ? buildOrganizationManagement0425Marker(currentOrg, {
+            scopeLayout: isOrganizationManagement0425Scheme2Command ? "outsideCard" : undefined,
+          })
         : isEmployeePermissionGuide0425UserCommand
           ? ORG_EMPLOYEE_PERMISSION_GUIDE_0425_MARKER
           : isOrgSettingsPermission0425UserCommand
@@ -3844,7 +4097,9 @@ export function MainAIChatWindow({
       const orgMgmtMsg: Message = {
         id: `org-management-0425-${now}`,
         senderId: conversation.user.id,
-        content: buildOrganizationManagement0425Marker(currentOrg),
+        content: buildOrganizationManagement0425Marker(currentOrg, {
+          scopeLayout: isOrganizationManagement0425Scheme2Command ? "outsideCard" : undefined,
+        }),
         timestamp: ts,
         createdAt: now,
         isAfterPrompt: true,
@@ -5178,8 +5433,12 @@ export function MainAIChatWindow({
                       snapshot?: Record<string, unknown>;
                       /** 0417 原位置编辑：同一条详情消息内切换为编辑表单 */
                       inlineEditing?: boolean;
-                      /** 0417 原位置编辑：保存后标题后缀「（已更新）」 */
+                      /** 原位置编辑：保存后展示标题旁更新时间 */
                       justUpdated?: boolean;
+                      /** 原位置编辑：保存后在标题旁展示的小号更新时间 */
+                      updatedAtTime?: string;
+                      /** 演示：卡片原位置更新定位规范，复用任务详情但调整操作栏位置 */
+                      layoutVariant?: "inPlaceUpdatePositioningDemo";
                     };
                     const baseDetail = getTaskDetailOrFallback(parsed.id ?? "");
                     const snap = parsed.snapshot;
@@ -5218,15 +5477,18 @@ export function MainAIChatWindow({
                     const is0417InlineEditFlow = taskEntryVariant === "task0417InlineEdit";
                     const inlineEditing0417 = Boolean(parsed.inlineEditing);
                     const justUpdated0417 = Boolean(parsed.justUpdated);
+                    const inPlacePositioningDemo =
+                      parsed.layoutVariant === "inPlaceUpdatePositioningDemo" && appContext === "main";
+                    const isInPlaceInlineEditFlow = is0417InlineEditFlow || inPlacePositioningDemo;
 
-                    if (is0417InlineEditFlow && inlineEditing0417) {
+                    if (isInPlaceInlineEditFlow && inlineEditing0417) {
                       return (
                         <EditTaskFormCard
                           cardTitle="任务详情"
                           detail={detail}
                           onConfirm={(snap) => {
                             if (!snap) return;
-                            /** 0417 原位置编辑：同条卡片切换到「只读 + 已更新」态，不算新一轮 */
+                            /** 原位置编辑：同条卡片切换到「只读 + 已更新」态，不算新一轮 */
                             scrollInPlaceMutatedCardToTop(msg.id);
                             patchMessages((prev) =>
                               prev.map((m) =>
@@ -5235,8 +5497,13 @@ export function MainAIChatWindow({
                                       ...m,
                                       content: `${TASK_DETAIL_MARKER}:${JSON.stringify({
                                         id: parsed.id ?? detail.id,
+                                        layoutVariant: parsed.layoutVariant,
                                         inlineEditing: false,
                                         justUpdated: true,
+                                        updatedAtTime: new Date().toLocaleTimeString([], {
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        }),
                                         snapshot: {
                                           name: snap.name,
                                           assignee: snap.assignee,
@@ -5262,13 +5529,17 @@ export function MainAIChatWindow({
                     return (
                       <TaskDetailCard
                         detail={detail}
-                        detailToolbarVariant={detailToolbarVariant0417}
-                        showTitleUpdatedSuffix={is0417InlineEditFlow && justUpdated0417}
+                        detailToolbarVariant={inPlacePositioningDemo ? "figma0417" : detailToolbarVariant0417}
+                        detailToolbarPlacement={inPlacePositioningDemo ? "underTaskTitle" : "bottom"}
+                        titleBelowAccessory={inPlacePositioningDemo ? mainAiOrgScopeBarEl : undefined}
+                        titleUpdatedAt={
+                          isInPlaceInlineEditFlow && justUpdated0417 ? parsed.updatedAtTime : undefined
+                        }
                         onPushTaskChatCard={
-                          appContext === "task"
+                          appContext === "task" || inPlacePositioningDemo
                             ? (kind: TaskChatCardKind, options?: TaskPushChatCardOptions) => {
-                                if (kind === "edit" && taskEntryVariant === "task0417InlineEdit") {
-                                  /** 0417 原位置编辑：浏览 → 编辑，同条卡片切形态，不算新一轮 */
+                                if (kind === "edit" && isInPlaceInlineEditFlow) {
+                                  /** 原位置编辑：浏览 → 编辑，同条卡片切形态，不算新一轮 */
                                   scrollInPlaceMutatedCardToTop(msg.id);
                                   patchMessages((prev) =>
                                     prev.map((m) => {
@@ -5294,6 +5565,7 @@ export function MainAIChatWindow({
                                   );
                                   return;
                                 }
+                                if (inPlacePositioningDemo) return;
                                 const markers: Record<TaskChatCardKind, string> = {
                                   edit: EDIT_TASK_FORM_MARKER,
                                   subtask: SUBTASK_FORM_MARKER,
@@ -6099,7 +6371,10 @@ export function MainAIChatWindow({
             </TaskChatMessageRow>
           ) : isOrganizationManagement0425Card ? (
             (() => {
-              const orgId = parseOrganizationManagement0425MarkerOrgId(msg.content) ?? currentOrg;
+              const payload = parseOrganizationManagement0425MarkerPayload(msg.content);
+              const orgId =
+                typeof payload?.orgId === "string" && payload.orgId ? payload.orgId : currentOrg;
+              const scopeLayout = payload?.scopeLayout === "outsideCard" ? "outsideCard" : "inCard";
               const orgName =
                 orgId !== NO_ORG_MESSAGE_SCOPE
                   ? schedule0422NavOrganizations.find((o) => o.id === orgId)?.name ?? orgId
@@ -6113,15 +6388,22 @@ export function MainAIChatWindow({
                       patchMessages((prev) =>
                         prev.map((item) =>
                           item.id === msg.id
-                            ? { ...item, content: buildOrganizationManagement0425Marker(nextOrgId) }
+                            ? {
+                                ...item,
+                                content: buildOrganizationManagement0425Marker(nextOrgId, {
+                                  scopeLayout:
+                                    scopeLayout === "outsideCard" ? "outsideCard" : undefined,
+                                }),
+                              }
                             : item,
                         ),
                       );
                       handleOrgSwitch(nextOrgId);
                     }}
-                    embedded
-                    hideTriggerOrgIcon
-                    textTone="subtle"
+                    embedded={scopeLayout === "inCard"}
+                    trailingMargin="none"
+                    hideTriggerOrgIcon={scopeLayout === "inCard"}
+                    textTone={scopeLayout === "inCard" ? "subtle" : "default"}
                   />
                 ) : null;
               return (
@@ -6135,11 +6417,30 @@ export function MainAIChatWindow({
                   className="flex w-full min-w-0 flex-col gap-[var(--space-150)]"
                 >
                   <OrganizationManagementCard0425
-                    mainAiTitleBelowAccessory={orgScopeBarEl ?? undefined}
-                    organizationHeadline={orgName}
-                    hideSubtitle={
-                      interactionRulesOrgNavDemo && interactionRulesOrgCardMessageId === msg.id
+                    organizationId={orgId}
+                    mainAiTitleAboveAccessory={
+                      scopeLayout === "outsideCard" ? orgScopeBarEl ?? undefined : undefined
                     }
+                    mainAiTitleBelowAccessory={
+                      scopeLayout === "inCard" ? orgScopeBarEl ?? undefined : undefined
+                    }
+                    organizationHeadline={orgName}
+                    scopeLayout={scopeLayout}
+                    onScopeLayoutChange={(nextLayout) => {
+                      patchMessages((prev) =>
+                        prev.map((item) =>
+                          item.id === msg.id
+                            ? {
+                                ...item,
+                                content: buildOrganizationManagement0425Marker(orgId, {
+                                  scopeLayout: nextLayout === "outsideCard" ? "outsideCard" : undefined,
+                                }),
+                              }
+                            : item,
+                        ),
+                      );
+                    }}
+                    hideSubtitle
                   />
                 </div>
               </TaskChatMessageRow>
@@ -7616,27 +7917,31 @@ export function MainAIChatWindow({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className="flex items-center gap-[var(--space-200)] flex-1 justify-start"
+                className="flex items-center gap-[var(--space-400)] flex-1 justify-start"
               >
-                <button
-                  onClick={() => setActiveApp(null)}
-                  className="bg-bg flex gap-[var(--space-100)] h-[var(--space-800)] items-center px-[var(--space-300)] py-[var(--space-150)] rounded-full shrink-0 hover:bg-[var(--black-alpha-11)] transition-all duration-300 ease-out border border-border group"
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-text-secondary group-hover:text-text transition-colors">
-                    <path d="M8.75 3.5L5.25 7L8.75 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <p className="text-[length:var(--font-size-xs)] leading-none text-text-secondary group-hover:text-text whitespace-nowrap font-[var(--font-weight-medium)] transition-colors">
-                    返回
-                  </p>
-                </button>
-                
-                {/* Main App Entry - Right after Back Button */}
-                <OrganizationSwitcherButton
-                  onClick={() => setIsAllAppsOpen(true)}
-                  isOpen={isAllAppsOpen}
-                  currentApp={switcherCurrentApp}
-                />
-                
+                <div className="flex shrink-0 items-center gap-[var(--space-200)]">
+                  <button
+                    onClick={() => setActiveApp(null)}
+                    className="bg-bg flex gap-[var(--space-100)] h-[var(--space-800)] items-center px-[var(--space-300)] py-[var(--space-150)] rounded-full shrink-0 hover:bg-[var(--black-alpha-11)] transition-all duration-300 ease-out border border-border group"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-text-secondary group-hover:text-text transition-colors">
+                      <path d="M8.75 3.5L5.25 7L8.75 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <p className="text-[length:var(--font-size-xs)] leading-none text-text-secondary group-hover:text-text whitespace-nowrap font-[var(--font-weight-medium)] transition-colors">
+                      返回
+                    </p>
+                  </button>
+
+                  {/* Main App Entry - Right after Back Button */}
+                  <OrganizationSwitcherButton
+                    onClick={() => setIsAllAppsOpen(true)}
+                    isOpen={isAllAppsOpen}
+                    currentApp={switcherCurrentApp}
+                  />
+                </div>
+
+                <div className="flex min-w-0 flex-1 items-center gap-[var(--space-200)]">
+
                 {/**
                  * 底部快捷入口按当前教育空间类型切换：
                  * - 无空间 + `educationNoSpaceDockTeaser`：仅 3 个一级 pill，无 hover 展开子菜单；首次点对话气泡、再次 toast
@@ -7666,6 +7971,7 @@ export function MainAIChatWindow({
                     />
                   ),
                 )}
+                </div>
               </motion.div>
             ) : activeApp === "task" ? (
               <motion.div
@@ -7674,27 +7980,30 @@ export function MainAIChatWindow({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className="flex items-center gap-[var(--space-200)] flex-1 justify-start"
+                className="flex items-center gap-[var(--space-400)] flex-1 justify-start"
               >
-                <button
-                  type="button"
-                  onClick={() => setActiveApp(null)}
-                  className="bg-bg flex gap-[var(--space-100)] h-[var(--space-800)] items-center px-[var(--space-300)] py-[var(--space-150)] rounded-full shrink-0 hover:bg-[var(--black-alpha-11)] transition-all duration-300 ease-out border border-border group"
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-text-secondary group-hover:text-text transition-colors">
-                    <path d="M8.75 3.5L5.25 7L8.75 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <p className="text-[length:var(--font-size-xs)] leading-none text-text-secondary group-hover:text-text whitespace-nowrap font-[var(--font-weight-medium)] transition-colors">
-                    返回
-                  </p>
-                </button>
+                <div className="flex shrink-0 items-center gap-[var(--space-200)]">
+                  <button
+                    type="button"
+                    onClick={() => setActiveApp(null)}
+                    className="bg-bg flex gap-[var(--space-100)] h-[var(--space-800)] items-center px-[var(--space-300)] py-[var(--space-150)] rounded-full shrink-0 hover:bg-[var(--black-alpha-11)] transition-all duration-300 ease-out border border-border group"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-text-secondary group-hover:text-text transition-colors">
+                      <path d="M8.75 3.5L5.25 7L8.75 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <p className="text-[length:var(--font-size-xs)] leading-none text-text-secondary group-hover:text-text whitespace-nowrap font-[var(--font-weight-medium)] transition-colors">
+                      返回
+                    </p>
+                  </button>
 
-                <OrganizationSwitcherButton
-                  onClick={() => setIsAllAppsOpen(true)}
-                  isOpen={isAllAppsOpen}
-                  currentApp={switcherCurrentApp}
-                />
+                  <OrganizationSwitcherButton
+                    onClick={() => setIsAllAppsOpen(true)}
+                    isOpen={isAllAppsOpen}
+                    currentApp={switcherCurrentApp}
+                  />
+                </div>
 
+                <div className="flex min-w-0 flex-1 items-center gap-[var(--space-200)]">
                 {TASK_DOCK_SECONDARY_APPS.map((app) => (
                   <SecondaryAppButton
                     key={app.id}
@@ -7786,6 +8095,7 @@ export function MainAIChatWindow({
                     }}
                   />
                 ))}
+                </div>
               </motion.div>
             ) : activeApp === "mail" ? (
               <motion.div
@@ -7795,31 +8105,41 @@ export function MainAIChatWindow({
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
                 className={cn(
-                  "flex flex-1 min-w-0 justify-start gap-x-[var(--space-200)] gap-y-[var(--space-150)]",
+                  "flex flex-1 min-w-0 justify-start gap-x-[var(--space-400)] gap-y-[var(--space-150)]",
                   taskEntryIsEmail0415ScopeFamily(taskEntryVariant)
                     ? "flex-wrap items-center content-start"
-                    : "items-center gap-[var(--space-200)]"
+                    : "items-center"
                 )}
               >
-                <button
-                  type="button"
-                  onClick={() => setActiveApp(null)}
-                  className="bg-bg flex gap-[var(--space-100)] h-[var(--space-800)] items-center px-[var(--space-300)] py-[var(--space-150)] rounded-full shrink-0 hover:bg-[var(--black-alpha-11)] transition-all duration-300 ease-out border border-border group"
+                <div className="flex shrink-0 items-center gap-[var(--space-200)]">
+                  <button
+                    type="button"
+                    onClick={() => setActiveApp(null)}
+                    className="bg-bg flex gap-[var(--space-100)] h-[var(--space-800)] items-center px-[var(--space-300)] py-[var(--space-150)] rounded-full shrink-0 hover:bg-[var(--black-alpha-11)] transition-all duration-300 ease-out border border-border group"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-text-secondary group-hover:text-text transition-colors">
+                      <path d="M8.75 3.5L5.25 7L8.75 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <p className="text-[length:var(--font-size-xs)] leading-none text-text-secondary group-hover:text-text whitespace-nowrap font-[var(--font-weight-medium)] transition-colors">
+                      返回
+                    </p>
+                  </button>
+
+                  <OrganizationSwitcherButton
+                    onClick={() => setIsAllAppsOpen(true)}
+                    isOpen={isAllAppsOpen}
+                    currentApp={switcherCurrentApp}
+                  />
+                </div>
+
+                <div
+                  className={cn(
+                    "flex min-w-0 flex-1 gap-x-[var(--space-200)] gap-y-[var(--space-150)]",
+                    taskEntryIsEmail0415ScopeFamily(taskEntryVariant)
+                      ? "flex-wrap items-center content-start"
+                      : "items-center",
+                  )}
                 >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-text-secondary group-hover:text-text transition-colors">
-                    <path d="M8.75 3.5L5.25 7L8.75 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <p className="text-[length:var(--font-size-xs)] leading-none text-text-secondary group-hover:text-text whitespace-nowrap font-[var(--font-weight-medium)] transition-colors">
-                    返回
-                  </p>
-                </button>
-
-                <OrganizationSwitcherButton
-                  onClick={() => setIsAllAppsOpen(true)}
-                  isOpen={isAllAppsOpen}
-                  currentApp={switcherCurrentApp}
-                />
-
                 {mailSecondaryDockApps.map((app) => (
                   <SecondaryAppButton
                     key={app.id}
@@ -8018,6 +8338,7 @@ export function MainAIChatWindow({
                     }}
                   />
                 ))}
+                </div>
               </motion.div>
             ) : invite0421NoOrgShellPersonalDock ? (
               <motion.div
@@ -8053,26 +8374,29 @@ export function MainAIChatWindow({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className="flex min-w-0 flex-1 items-center justify-start gap-[var(--space-200)]"
+                className="flex min-w-0 flex-1 items-center justify-start gap-[var(--space-400)]"
               >
-                <button
-                  type="button"
-                  onClick={() => setActiveApp(null)}
-                  className="bg-bg flex shrink-0 gap-[var(--space-100)] h-[var(--space-800)] items-center px-[var(--space-300)] py-[var(--space-150)] rounded-full hover:bg-[var(--black-alpha-11)] transition-all duration-300 ease-out border border-border group"
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-text-secondary group-hover:text-text transition-colors">
-                    <path d="M8.75 3.5L5.25 7L8.75 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <p className="text-[length:var(--font-size-xs)] leading-none text-text-secondary group-hover:text-text whitespace-nowrap font-[var(--font-weight-medium)] transition-colors">
-                    返回
-                  </p>
-                </button>
+                <div className="flex shrink-0 items-center gap-[var(--space-200)]">
+                  <button
+                    type="button"
+                    onClick={() => setActiveApp(null)}
+                    className="bg-bg flex shrink-0 gap-[var(--space-100)] h-[var(--space-800)] items-center px-[var(--space-300)] py-[var(--space-150)] rounded-full hover:bg-[var(--black-alpha-11)] transition-all duration-300 ease-out border border-border group"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-text-secondary group-hover:text-text transition-colors">
+                      <path d="M8.75 3.5L5.25 7L8.75 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <p className="text-[length:var(--font-size-xs)] leading-none text-text-secondary group-hover:text-text whitespace-nowrap font-[var(--font-weight-medium)] transition-colors">
+                      返回
+                    </p>
+                  </button>
 
-                <OrganizationSwitcherButton
-                  onClick={() => setIsAllAppsOpen(true)}
-                  isOpen={isAllAppsOpen}
-                  currentApp={switcherCurrentApp}
-                />
+                  <OrganizationSwitcherButton
+                    onClick={() => setIsAllAppsOpen(true)}
+                    isOpen={isAllAppsOpen}
+                    currentApp={switcherCurrentApp}
+                  />
+                </div>
+                <div className="flex min-w-0 flex-1 items-center gap-[var(--space-200)]">
                 {ORGANIZATION_0425_APPS.map((app) => (
                   <SecondaryAppButton
                     key={app.id}
@@ -8090,6 +8414,7 @@ export function MainAIChatWindow({
                     }}
                   />
                 ))}
+                </div>
               </motion.div>
             ) : activeApp === "employee" && organizationManagement0425Demo ? (
               <motion.div
@@ -8098,26 +8423,29 @@ export function MainAIChatWindow({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className="flex min-w-0 flex-1 items-center justify-start gap-[var(--space-200)]"
+                className="flex min-w-0 flex-1 items-center justify-start gap-[var(--space-400)]"
               >
-                <button
-                  type="button"
-                  onClick={() => setActiveApp(null)}
-                  className="bg-bg flex shrink-0 gap-[var(--space-100)] h-[var(--space-800)] items-center px-[var(--space-300)] py-[var(--space-150)] rounded-full hover:bg-[var(--black-alpha-11)] transition-all duration-300 ease-out border border-border group"
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-text-secondary group-hover:text-text transition-colors">
-                    <path d="M8.75 3.5L5.25 7L8.75 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <p className="text-[length:var(--font-size-xs)] leading-none text-text-secondary group-hover:text-text whitespace-nowrap font-[var(--font-weight-medium)] transition-colors">
-                    返回
-                  </p>
-                </button>
+                <div className="flex shrink-0 items-center gap-[var(--space-200)]">
+                  <button
+                    type="button"
+                    onClick={() => setActiveApp(null)}
+                    className="bg-bg flex shrink-0 gap-[var(--space-100)] h-[var(--space-800)] items-center px-[var(--space-300)] py-[var(--space-150)] rounded-full hover:bg-[var(--black-alpha-11)] transition-all duration-300 ease-out border border-border group"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-text-secondary group-hover:text-text transition-colors">
+                      <path d="M8.75 3.5L5.25 7L8.75 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <p className="text-[length:var(--font-size-xs)] leading-none text-text-secondary group-hover:text-text whitespace-nowrap font-[var(--font-weight-medium)] transition-colors">
+                      返回
+                    </p>
+                  </button>
 
-                <OrganizationSwitcherButton
-                  onClick={() => setIsAllAppsOpen(true)}
-                  isOpen={isAllAppsOpen}
-                  currentApp={switcherCurrentApp}
-                />
+                  <OrganizationSwitcherButton
+                    onClick={() => setIsAllAppsOpen(true)}
+                    isOpen={isAllAppsOpen}
+                    currentApp={switcherCurrentApp}
+                  />
+                </div>
+                <div className="flex min-w-0 flex-1 items-center gap-[var(--space-200)]">
                 {EMPLOYEE_0425_APPS.map((app) => (
                   <SecondaryAppButton
                     key={app.id}
@@ -8131,6 +8459,7 @@ export function MainAIChatWindow({
                     }}
                   />
                 ))}
+                </div>
               </motion.div>
             ) : activeApp === "schedule" && schedule0422DrawerDemo ? (
               <motion.div
@@ -8139,26 +8468,28 @@ export function MainAIChatWindow({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className="flex min-w-0 flex-1 items-center justify-start gap-[var(--space-200)]"
+                className="flex min-w-0 flex-1 items-center justify-start gap-[var(--space-400)]"
               >
-                <button
-                  type="button"
-                  onClick={() => setActiveApp(null)}
-                  className="bg-bg flex shrink-0 gap-[var(--space-100)] h-[var(--space-800)] items-center px-[var(--space-300)] py-[var(--space-150)] rounded-full hover:bg-[var(--black-alpha-11)] transition-all duration-300 ease-out border border-border group"
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-text-secondary group-hover:text-text transition-colors">
-                    <path d="M8.75 3.5L5.25 7L8.75 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <p className="text-[length:var(--font-size-xs)] leading-none text-text-secondary group-hover:text-text whitespace-nowrap font-[var(--font-weight-medium)] transition-colors">
-                    返回
-                  </p>
-                </button>
+                <div className="flex shrink-0 items-center gap-[var(--space-200)]">
+                  <button
+                    type="button"
+                    onClick={() => setActiveApp(null)}
+                    className="bg-bg flex shrink-0 gap-[var(--space-100)] h-[var(--space-800)] items-center px-[var(--space-300)] py-[var(--space-150)] rounded-full hover:bg-[var(--black-alpha-11)] transition-all duration-300 ease-out border border-border group"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-text-secondary group-hover:text-text transition-colors">
+                      <path d="M8.75 3.5L5.25 7L8.75 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <p className="text-[length:var(--font-size-xs)] leading-none text-text-secondary group-hover:text-text whitespace-nowrap font-[var(--font-weight-medium)] transition-colors">
+                      返回
+                    </p>
+                  </button>
 
-                <OrganizationSwitcherButton
-                  onClick={() => setIsAllAppsOpen(true)}
-                  isOpen={isAllAppsOpen}
-                  currentApp={switcherCurrentApp}
-                />
+                  <OrganizationSwitcherButton
+                    onClick={() => setIsAllAppsOpen(true)}
+                    isOpen={isAllAppsOpen}
+                    currentApp={switcherCurrentApp}
+                  />
+                </div>
 
                 <div className="scrollbar-hide flex min-w-0 flex-1 items-center gap-[var(--space-150)] overflow-x-auto overflow-y-hidden pb-[var(--space-50)]">
                   <Schedule0422BottomQuickRow

@@ -40,7 +40,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu"
-import { ORGANIZATION_MANAGEMENT_0425_USER_TRIGGER } from "../../constants/organizationManagement0425"
+import {
+  ORGANIZATION_MANAGEMENT_0425_SCHEME2_INPUT_PROMPT,
+  ORGANIZATION_MANAGEMENT_0425_USER_TRIGGER,
+} from "../../constants/organizationManagement0425"
 
 /** 0419 演示：用首条用户发言模拟「AI 生成的侧栏标题」 */
 function deriveMockAiSessionTitleFromUserText(text: string): string {
@@ -177,6 +180,8 @@ export function MainAI(props: {
   const [interactionRulesBusinessCardDemoNonce, setInteractionRulesBusinessCardDemoNonce] =
     React.useState(0)
   const [organizationManagement0425CommandNonce, setOrganizationManagement0425CommandNonce] =
+    React.useState(0)
+  const [organizationManagement0425Scheme2CommandNonce, setOrganizationManagement0425Scheme2CommandNonce] =
     React.useState(0)
   const [interactionRulesMainAiOrgDemoNonce, setInteractionRulesMainAiOrgDemoNonce] =
     React.useState(0)
@@ -417,6 +422,7 @@ export function MainAI(props: {
           permissionEditCard0424Demo={permissionEditCard0424Demo}
           organizationManagement0425Demo={organizationManagement0425Demo}
           organizationManagement0425CommandNonce={organizationManagement0425CommandNonce}
+          organizationManagement0425Scheme2CommandNonce={organizationManagement0425Scheme2CommandNonce}
         />
       ) : primaryNavId === "message" &&
         demoInstructionShell &&
@@ -519,6 +525,13 @@ export function MainAI(props: {
                   }}
                 >
                   {ORGANIZATION_MANAGEMENT_0425_USER_TRIGGER}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setOrganizationManagement0425Scheme2CommandNonce((n) => n + 1)
+                  }}
+                >
+                  {ORGANIZATION_MANAGEMENT_0425_SCHEME2_INPUT_PROMPT}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

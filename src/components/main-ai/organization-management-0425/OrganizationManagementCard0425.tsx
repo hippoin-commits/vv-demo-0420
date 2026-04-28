@@ -36,6 +36,7 @@ import {
 import { cn } from "../../ui/utils";
 
 type PendingKind = "add" | "edit" | "delete";
+type OrgSwitcherLayout0425 = "inCard" | "outsideCard";
 
 type OrgDepartment0425 = {
   id: string;
@@ -186,6 +187,61 @@ const INITIAL_DEPARTMENTS_0425: OrgDepartment0425[] = [
 
 function cloneInitialDepartments0425() {
   return INITIAL_DEPARTMENTS_0425.map((item) => ({ ...item }));
+}
+
+function getInitialDepartmentsForOrganization0425(
+  organizationId?: string,
+  organizationName?: string,
+) {
+  const base = cloneInitialDepartments0425();
+  const rootName = organizationName || "组织";
+
+  if (organizationId === "default") {
+    return base.map((item) => {
+      if (item.id === "pg") {
+        return {
+          ...item,
+          name: "默认组织",
+          companyPath: rootName,
+          departmentCount: "4 / 6",
+          positionCount: "12 / 18",
+          manager: "周岚(管理员)",
+        };
+      }
+      if (item.id === "president") return { ...item, name: "综合办公室", manager: "周岚(群主)", positionCount: "4 / 6" };
+      if (item.id === "rd") return { ...item, name: "产品技术部", companyPath: rootName, manager: "陈默(负责人)", departmentCount: "1 / 2" };
+      if (item.id === "operation") return { ...item, name: "产品运营组", companyPath: `${rootName}/产品技术部`, manager: "林序(运营主管)" };
+      if (item.id === "hr") return { ...item, name: "客户成功组", companyPath: `${rootName}/产品技术部`, manager: "许诺(客户成功主管)" };
+      if (item.id === "strategy") return { ...item, name: "市场增长部", companyPath: rootName, manager: "秦越(市场负责人)", positionCount: "3 / 5" };
+      return { ...item, companyPath: item.companyPath.replace("PaloGino环球科技集团", rootName) };
+    });
+  }
+
+  if (organizationId === "test") {
+    return base.slice(0, 6).map((item) => {
+      if (item.id === "pg") {
+        return {
+          ...item,
+          name: "测试机构",
+          companyPath: rootName,
+          departmentCount: "2 / 3",
+          positionCount: "7 / 9",
+          manager: "测试管理员",
+          groupName: "测试机构总群",
+        };
+      }
+      if (item.id === "president") return { ...item, name: "测试管理组", companyPath: rootName, manager: "测试一号(群主)", positionCount: "2 / 3" };
+      if (item.id === "rd") return { ...item, name: "自动化验证组", companyPath: rootName, manager: "测试二号(QA)", departmentCount: "1 / 1" };
+      if (item.id === "operation") return { ...item, name: "回归用例组", companyPath: `${rootName}/自动化验证组`, manager: "测试三号" };
+      if (item.id === "hr") return { ...item, name: "权限验收组", companyPath: `${rootName}/自动化验证组`, manager: "测试四号" };
+      return { ...item, companyPath: rootName };
+    });
+  }
+
+  return base.map((item) => ({
+    ...item,
+    companyPath: item.companyPath.replace("PaloGino环球科技集团", rootName),
+  }));
 }
 
 function pendingLabel(kind?: PendingKind) {
@@ -508,18 +564,27 @@ function OrganizationPermissionApplicationCard0425({ changes }: { changes: OrgDe
 }
 
 export function OrganizationManagementCard0425(props?: {
+  organizationId?: string;
   organizationHeadline?: string;
+  /** 主 AI 下：标题上方组织/空间切换（方案2） */
+  mainAiTitleAboveAccessory?: React.ReactNode;
   /** 主 AI 下：标题下组织/空间切换（由外层注入，与演示用 `titleBelowAccessory` 组合） */
   mainAiTitleBelowAccessory?: React.ReactNode;
   /** 标题行下方、副标题上方（如规范演示：卡片内组织切换） */
   titleBelowAccessory?: React.ReactNode;
   /** 卡内组织切换演示：隐藏第三行副标题 */
   hideSubtitle?: boolean;
+  scopeLayout?: OrgSwitcherLayout0425;
+  onScopeLayoutChange?: (layout: OrgSwitcherLayout0425) => void;
 }) {
+  const organizationId = props?.organizationId;
   const organizationHeadline = props?.organizationHeadline;
+  const mainAiTitleAboveAccessory = props?.mainAiTitleAboveAccessory;
   const mainAiTitleBelowAccessory = props?.mainAiTitleBelowAccessory;
   const titleBelowAccessory = props?.titleBelowAccessory;
   const hideSubtitle = props?.hideSubtitle ?? false;
+  const scopeLayout = props?.scopeLayout ?? "inCard";
+  const onScopeLayoutChange = props?.onScopeLayoutChange;
   const composedTitleBelowAccessory =
     mainAiTitleBelowAccessory || titleBelowAccessory ? (
       <>
@@ -527,7 +592,11 @@ export function OrganizationManagementCard0425(props?: {
         {titleBelowAccessory}
       </>
     ) : undefined;
-  const [departments, setDepartments] = React.useState<OrgDepartment0425[]>(() => cloneInitialDepartments0425());
+  const initialDepartments = React.useMemo(
+    () => getInitialDepartmentsForOrganization0425(organizationId, organizationHeadline),
+    [organizationId, organizationHeadline],
+  );
+  const [departments, setDepartments] = React.useState<OrgDepartment0425[]>(() => initialDepartments);
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({
     pg: true,
     rd: true,
@@ -544,8 +613,20 @@ export function OrganizationManagementCard0425(props?: {
   const drawerParent = drawerTarget ? departments.find((item) => item.id === drawerTarget.parentId) ?? null : null;
   const deleteTarget = deleteTargetId ? departments.find((item) => item.id === deleteTargetId) ?? null : null;
 
+  React.useEffect(() => {
+    setDepartments(initialDepartments);
+    setExpanded({
+      pg: true,
+      rd: true,
+      strategy: true,
+    });
+    setDrawer(null);
+    setDeleteTargetId(null);
+    setApplicationVisible(false);
+  }, [initialDepartments]);
+
   const resetChanges = () => {
-    setDepartments(cloneInitialDepartments0425());
+    setDepartments(initialDepartments);
     setApplicationVisible(false);
     toast.message("已恢复", { description: "待提交变更已清空。" });
   };
@@ -607,7 +688,8 @@ export function OrganizationManagementCard0425(props?: {
   return (
     <>
       <GenericCard
-        title="组织管理"
+        title="组织机构管理"
+        titleAboveAccessory={mainAiTitleAboveAccessory}
         titleBelowAccessory={composedTitleBelowAccessory}
         subtitle={
           hideSubtitle
@@ -738,6 +820,34 @@ export function OrganizationManagementCard0425(props?: {
                 }}
               >
                 提交
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
+        {onScopeLayoutChange ? (
+          <div className="mt-[var(--space-400)] rounded-[var(--radius-md)] border border-border bg-bg-secondary px-[var(--space-300)] py-[var(--space-300)]">
+            <p className="mb-[var(--space-200)] text-[length:var(--font-size-xs)] text-text-tertiary">
+              演示指令
+            </p>
+            <div className="flex flex-wrap gap-[var(--space-200)]">
+              <Button
+                type="button"
+                variant={scopeLayout === "inCard" ? "secondary" : "outline"}
+                size="sm"
+                rounded
+                onClick={() => onScopeLayoutChange("inCard")}
+              >
+                方案1：组织切换在标题下面
+              </Button>
+              <Button
+                type="button"
+                variant={scopeLayout === "outsideCard" ? "secondary" : "outline"}
+                size="sm"
+                rounded
+                onClick={() => onScopeLayoutChange("outsideCard")}
+              >
+                方案2：组织切换在标题上面
               </Button>
             </div>
           </div>

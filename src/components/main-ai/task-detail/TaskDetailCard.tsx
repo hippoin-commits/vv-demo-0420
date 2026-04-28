@@ -606,14 +606,20 @@ export function TaskDetailCard({
   onPushTaskChatCard,
   /** `figma0417`：0417 任务方案页底栏，对齐 Weekly 设计稿（图标 18px、间距 20px、右内边距 16px） */
   detailToolbarVariant = "default",
-  /** 0417 原位置编辑保存后：在卡牌首行标题「任务详情」右侧展示「（已更新）」 */
-  showTitleUpdatedSuffix = false,
+  /** 演示规范：将底部操作栏迁移到任务标题下方，主体信息区保持不变 */
+  detailToolbarPlacement = "bottom",
+  /** 主 AI 下的卡片上下文入口，例如组织 / 空间切换 */
+  titleBelowAccessory,
+  /** 原位置编辑保存后：在卡牌首行标题右侧展示小号更新时间 */
+  titleUpdatedAt,
 }: {
   detail: TaskDetailData;
   /** 在任务会话中追加 GenericCard（编辑 / 子任务 / 交接 / 关联 / 评价 / 执行内容 / 模块子卡片） */
   onPushTaskChatCard?: (kind: TaskChatCardKind, options?: TaskPushChatCardOptions) => void;
   detailToolbarVariant?: "default" | "figma0417";
-  showTitleUpdatedSuffix?: boolean;
+  detailToolbarPlacement?: "bottom" | "underTaskTitle";
+  titleBelowAccessory?: React.ReactNode;
+  titleUpdatedAt?: string;
 }) {
   /** 非任务会话（无 onPushTaskChatCard）时「沟通」入口仍打开侧栏 */
   const [chatOpen, setChatOpen] = React.useState(false);
@@ -640,6 +646,94 @@ export function TaskDetailCard({
 
   const primaryActions = ALL_TASK_ACTIONS.slice(0, VISIBLE_ACTION_COUNT);
   const moreActions = ALL_TASK_ACTIONS.slice(VISIBLE_ACTION_COUNT);
+  const toolbarEl = (
+    <div
+      className={cn(
+        "flex flex-nowrap w-full items-center justify-end",
+        detailToolbarPlacement === "bottom"
+          ? "border-t border-border-divider pt-[var(--space-300)] pb-[var(--space-150)]"
+          : "py-[var(--space-50)]",
+        isFigma0417Toolbar
+          ? "gap-[var(--space-500)] pr-[var(--space-400)]"
+          : "gap-[6px] pr-[10px]"
+      )}
+    >
+      {primaryActions.map((a) => {
+        if (a.id === "meeting") {
+          return (
+            <MeetingHoverTrigger
+              key={a.id}
+              toolbarVariant={isFigma0417Toolbar ? "figma0417" : "default"}
+              onQuickMeeting={() => {
+                window.alert("已发起快速会议（演示）");
+              }}
+              onScheduleMeeting={() => {
+                window.alert("已打开预约会议（演示）");
+              }}
+            />
+          );
+        }
+        if (a.id === "follow") {
+          return (
+            <IconBtn
+              key={a.id}
+              label={a.label}
+              className={toolbarIconBtnClass}
+              onClick={() => setFollowed((f) => !f)}
+            >
+              <Heart
+                className={cn(
+                  toolbarIconSize === "lg" ? "size-[18px]" : "size-4",
+                  "transition-colors",
+                  followed ? "fill-[#E53935] text-[#E53935]" : "text-text-secondary"
+                )}
+                strokeWidth={followed ? 0 : 1.5}
+              />
+            </IconBtn>
+          );
+        }
+        return (
+          <IconBtn
+            key={a.id}
+            label={a.label}
+            className={toolbarIconBtnClass}
+            onClick={() => handlePrimaryAction(a.id)}
+          >
+            <TaskActionIcon actionId={a.id} size={toolbarIconSize} />
+          </IconBtn>
+        );
+      })}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            title="更多操作"
+            aria-label="更多操作"
+            className={cn(toolbarIconBtnClass, "hover:text-text-secondary")}
+          >
+            <MoreHorizontal
+              className={toolbarIconSize === "lg" ? "size-[18px]" : "size-4"}
+              strokeWidth={1.5}
+            />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="end"
+          className="min-w-[168px] max-h-[min(420px,70vh)] overflow-y-auto p-1"
+        >
+          {moreActions.map((a) => (
+            <DropdownMenuItem
+              key={a.id}
+              className="text-[length:var(--font-size-xs)] py-1.5 px-2 min-h-0"
+              onSelect={() => handleMoreAction(a.id)}
+            >
+              {a.label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
 
   const pushTaskHub = React.useCallback(
     (hub: TaskHubKind) => {
@@ -741,7 +835,14 @@ export function TaskDetailCard({
       <div className="w-full flex flex-col gap-[var(--space-300)]">
         <GenericCard
           title="任务详情"
-          titleSuffix={showTitleUpdatedSuffix ? "（已更新）" : undefined}
+          titleSuffix={
+            titleUpdatedAt ? (
+              <span className="text-[length:var(--font-size-xs)] text-text-tertiary">
+                更新于{titleUpdatedAt}
+              </span>
+            ) : undefined
+          }
+          titleBelowAccessory={titleBelowAccessory}
           className="overflow-hidden"
         >
           <div className="w-full flex flex-col gap-[var(--space-300)]">
@@ -776,6 +877,8 @@ export function TaskDetailCard({
                 </span>
               )}
             </div>
+
+            {detailToolbarPlacement === "underTaskTitle" ? toolbarEl : null}
 
             {/* 基本信息：执行人、负责人、参与人、创建人、任务编码、任务周期、任务类型 */}
             <div className="rounded-[var(--radius-md)] border border-border bg-bg-secondary p-[var(--space-400)] w-full">
@@ -831,89 +934,7 @@ export function TaskDetailCard({
 
             <TaskProgressSection detail={detail} />
 
-            <div
-              className={cn(
-                "flex flex-nowrap w-full items-center justify-end border-t border-border-divider pt-[var(--space-300)] pb-[var(--space-150)]",
-                isFigma0417Toolbar
-                  ? "gap-[var(--space-500)] pr-[var(--space-400)]"
-                  : "gap-[6px] pr-[10px]"
-              )}
-            >
-              {primaryActions.map((a) => {
-                if (a.id === "meeting") {
-                  return (
-                    <MeetingHoverTrigger
-                      key={a.id}
-                      toolbarVariant={isFigma0417Toolbar ? "figma0417" : "default"}
-                      onQuickMeeting={() => {
-                        window.alert("已发起快速会议（演示）");
-                      }}
-                      onScheduleMeeting={() => {
-                        window.alert("已打开预约会议（演示）");
-                      }}
-                    />
-                  );
-                }
-                if (a.id === "follow") {
-                  return (
-                    <IconBtn
-                      key={a.id}
-                      label={a.label}
-                      className={toolbarIconBtnClass}
-                      onClick={() => setFollowed((f) => !f)}
-                    >
-                      <Heart
-                        className={cn(
-                          toolbarIconSize === "lg" ? "size-[18px]" : "size-4",
-                          "transition-colors",
-                          followed ? "fill-[#E53935] text-[#E53935]" : "text-text-secondary"
-                        )}
-                        strokeWidth={followed ? 0 : 1.5}
-                      />
-                    </IconBtn>
-                  );
-                }
-                return (
-                  <IconBtn
-                    key={a.id}
-                    label={a.label}
-                    className={toolbarIconBtnClass}
-                    onClick={() => handlePrimaryAction(a.id)}
-                  >
-                    <TaskActionIcon actionId={a.id} size={toolbarIconSize} />
-                  </IconBtn>
-                );
-              })}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    title="更多操作"
-                    aria-label="更多操作"
-                    className={cn(toolbarIconBtnClass, "hover:text-text-secondary")}
-                  >
-                    <MoreHorizontal
-                      className={toolbarIconSize === "lg" ? "size-[18px]" : "size-4"}
-                      strokeWidth={1.5}
-                    />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className="min-w-[168px] max-h-[min(420px,70vh)] overflow-y-auto p-1"
-                >
-                  {moreActions.map((a) => (
-                    <DropdownMenuItem
-                      key={a.id}
-                      className="text-[length:var(--font-size-xs)] py-1.5 px-2 min-h-0"
-                      onSelect={() => handleMoreAction(a.id)}
-                    >
-                      {a.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            {detailToolbarPlacement === "bottom" ? toolbarEl : null}
           </div>
         </GenericCard>
 

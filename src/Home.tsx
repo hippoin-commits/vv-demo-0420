@@ -23,23 +23,20 @@ export function Home() {
     <div className="min-h-screen w-full overflow-x-hidden overflow-y-auto flex items-center justify-center bg-bg p-6">
       {/* 单列包裹各入口，仅整列在视口居中，中间不会出现大块空白 */}
       <div className="flex w-full max-w-sm flex-col items-center gap-6 shrink-0">
-        {DEMO_HOME_PRIMARY_NAV_ENTRIES.map(({ label, path }) => (
-          <Button
-            key={path}
-            variant="chat-submit"
-            className="w-full whitespace-normal text-center leading-snug py-[var(--space-250)]"
-            onClick={() => navigate(path)}
-          >
-            {label}
-          </Button>
-        ))}
-
         <Button
-          variant="chat-reset"
+          variant="chat-submit"
           className="w-full whitespace-normal text-center leading-snug py-[var(--space-250)]"
           onClick={() => navigate(DEMO_HOME_INTERACTION_DEMO_INSTRUCTIONS_ENTRY.path)}
         >
           {DEMO_HOME_INTERACTION_DEMO_INSTRUCTIONS_ENTRY.label}
+        </Button>
+
+        <Button
+          variant="chat-reset"
+          className="w-full whitespace-normal text-center leading-snug py-[var(--space-250)]"
+          onClick={() => navigate(DEMO_HOME_INTERACTION_RULES_ENTRY.path)}
+        >
+          {DEMO_HOME_INTERACTION_RULES_ENTRY.label}
         </Button>
 
         <div className="w-full shrink-0 flex justify-center">
@@ -108,13 +105,16 @@ export function Home() {
           </HoverCardContent>
         </HoverCard>
 
-        <Button
-          variant="chat-reset"
-          className="w-full whitespace-normal text-center leading-snug py-[var(--space-250)]"
-          onClick={() => navigate(DEMO_HOME_INTERACTION_RULES_ENTRY.path)}
-        >
-          {DEMO_HOME_INTERACTION_RULES_ENTRY.label}
-        </Button>
+        {DEMO_HOME_PRIMARY_NAV_ENTRIES.map(({ label, path }) => (
+          <Button
+            key={path}
+            variant="chat-reset"
+            className="w-full whitespace-normal text-center leading-snug py-[var(--space-250)]"
+            onClick={() => navigate(path)}
+          >
+            {label}
+          </Button>
+        ))}
       </div>
     </div>
   );

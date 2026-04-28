@@ -4,13 +4,28 @@
  */
 export const INVITE0421_WORKBENCH_APP_IDS = new Set([
   "task",
+  "feedback",
+  "meeting_room",
+  "workflow",
+  "permission",
+  "customer",
   "finance",
   "salary",
   "company",
-  "profile",
   "organization",
   "employee",
   "recruitment",
+  "attendance",
+  "performance",
+  "policy",
+  "material",
+  "onboarding",
+  "regularization",
+  "transfer",
+  "resignation",
+  "contract",
+  "goal",
+  "project",
 ]);
 
 /**
@@ -39,4 +54,35 @@ export const INVITE0421_NO_ORG_DOCK_APP_IDS_ORDERED = [
   "mail",
   "docs",
   "disk",
+] as const;
+
+/**
+ * 有组织 / 有租户选中时：先展示 7 个个人应用，再展示工作台应用。
+ * 工作台应用排除「我的 / 会议 / 邮箱」等个人入口，避免重复。
+ */
+export const INVITE0421_ORG_DOCK_APP_IDS_ORDERED = [
+  ...INVITE0421_NO_ORG_DOCK_APP_IDS_ORDERED,
+  "company",
+  "organization",
+  "employee",
+  "recruitment",
+  "attendance",
+  "salary",
+  "performance",
+  "finance",
+  "policy",
+  "material",
+  "onboarding",
+  "regularization",
+  "transfer",
+  "resignation",
+  "contract",
+  "goal",
+  "project",
+  "task",
+  "feedback",
+  "meeting_room",
+  "workflow",
+  "permission",
+  "customer",
 ] as const;

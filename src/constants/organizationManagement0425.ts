@@ -6,5 +6,9 @@ export const ORGANIZATION_MANAGEMENT_0425_USER_TRIGGER = "组织管理";
 export const ORGANIZATION_MANAGEMENT_0425_DEFAULT_INPUT_PROMPT =
   "演示：直接发送即可打开组织管理卡片";
 
+/** 0425 演示页：方案2，组织切换入口展示在卡片内标题上方 */
+export const ORGANIZATION_MANAGEMENT_0425_SCHEME2_INPUT_PROMPT =
+  "演示：组织管理卡片方案2（组织切换在标题上面）";
+
 export const ORGANIZATION_MANAGEMENT_0425_MARKER = "<<<ORGANIZATION_MANAGEMENT_0425>>>" as const;
 

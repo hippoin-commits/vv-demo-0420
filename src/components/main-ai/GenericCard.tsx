@@ -6,8 +6,10 @@ import { OperationSourceNavContext } from "./operationSourceNavContext";
 export interface GenericCardProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
   title: string;
-  /** 与 `title` 同一行、标题右侧的补充文案（如「（已更新）」） */
+  /** 与 `title` 同一行、标题右侧的补充文案（如「更新于16:30」） */
   titleSuffix?: React.ReactNode;
+  /** 标题行上方的自定义区域（如演示用组织切换条） */
+  titleAboveAccessory?: React.ReactNode;
   /** 标题行下方、副标题上方的自定义区域（如演示用组织切换条） */
   titleBelowAccessory?: React.ReactNode;
   /** 第二行小字（如任务名称）；子卡片不展示任务编码 */
@@ -62,6 +64,7 @@ export function OperationSourceBar({ label }: { label: string }) {
 export function GenericCard({
   title,
   titleSuffix,
+  titleAboveAccessory,
   titleBelowAccessory,
   subtitle,
   children,
@@ -76,6 +79,10 @@ export function GenericCard({
       )}
       {...props}
     >
+      {titleAboveAccessory ? (
+        <div className="w-full min-w-0">{titleAboveAccessory}</div>
+      ) : null}
+
       {/* 卡片头部：左侧标题（+ 可选副标题） */}
       <div className="relative flex w-full min-w-0 shrink-0 items-start gap-[var(--space-200)]">
         <div className="bg-primary h-[22px] w-[3px] shrink-0 self-start rounded-full" aria-hidden />
