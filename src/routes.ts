@@ -28,7 +28,8 @@ export const router = createMemoryRouter(
       path: "/",
       Component: Root,
       children: [
-        { index: true, Component: Home },
+        { index: true, Component: MainAIInteractionDemoInstructionSetPage },
+        { path: "home", Component: Home },
         { path: "main-ai", Component: MainAIPage },
         { path: "main-ai-0421-new-user-invited-org", Component: MainAI0421NewUserInvitedOrgPage },
         {

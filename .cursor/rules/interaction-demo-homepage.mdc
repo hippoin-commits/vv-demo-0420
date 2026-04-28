@@ -1,0 +1,10 @@
+---
+description: Keep the interaction demo instruction set as the default homepage
+alwaysApply: true
+---
+
+# Interaction Demo Homepage
+
+- The default `/` route must render `MainAIInteractionDemoInstructionSetPage`.
+- Do not change the project homepage away from 「交互演示指令集」 for any future UI, routing, navigation, demo, or deployment work.
+- If a landing/navigation page is needed, keep it on a secondary path such as `/home`; never make it the index route.
