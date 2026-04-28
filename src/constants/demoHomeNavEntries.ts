@@ -54,6 +54,7 @@ const ALL_DEMO_NAV_ENTRIES: readonly DemoHomeNavEntry[] = [
 export function getDemoNavBarTitle(pathname: string): string {
   let p = pathname.replace(/\/+$/, "") || "/";
   if (!p.startsWith("/")) p = `/${p}`;
+  if (p === "/") return DEMO_HOME_INTERACTION_DEMO_INSTRUCTIONS_ENTRY.label;
   const hit = ALL_DEMO_NAV_ENTRIES.find((e) => e.path === p);
   return hit?.label ?? "演示页面";
 }

@@ -1323,7 +1323,7 @@ type SecondaryAppButtonApp = {
    * 应用内子入口（主 AI / 应用 AI 底栏除「返回」「应用切换」外）：浅色底 + 同系深色图标。
    * 未传且存在 iconNode 时按 neutral（灰底）处理。
    */
-  subEntryTint?: "neutral" | "orange" | "blue" | "green" | "brand";
+  subEntryTint?: "neutral" | "orange" | "mailOrange" | "blue" | "green" | "brand";
   menu: Array<{ id?: string; name: string; iconKey?: string }>;
   /** 无二级菜单：主按钮单次点击即回调（如任务「筛选」「设置」） */
   directClick?: boolean;
@@ -1344,13 +1344,13 @@ function mapMailDockRowToSecondaryApp(row: MailDockRow): SecondaryAppButtonApp {
       return {
         ...base,
         iconNode: <FileText className="size-[13px]" strokeWidth={2} />,
-        subEntryTint: "orange",
+        subEntryTint: "mailOrange",
       };
     case "mail_my":
       return {
         ...base,
         iconNode: <User className="size-[13px]" strokeWidth={2} />,
-        subEntryTint: "orange",
+        subEntryTint: "mailOrange",
       };
     case "mail_business":
       return {
@@ -1648,6 +1648,7 @@ function SecondaryAppButton({
             className={cn(
               "flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[var(--radius-sm)] transition-colors",
               app.subEntryTint === "orange" && "bg-[var(--orange-alpha-11)] text-[var(--orange-10)]",
+              app.subEntryTint === "mailOrange" && "bg-[var(--orange-alpha-11)] text-[var(--orange-3)]",
               app.subEntryTint === "blue" && "bg-[var(--blue-alpha-11)] text-primary",
               app.subEntryTint === "green" && "bg-[var(--green-alpha-11)] text-success",
               app.subEntryTint === "brand" && "bg-primary/10 text-primary",

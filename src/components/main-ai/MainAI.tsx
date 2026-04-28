@@ -17,7 +17,6 @@ import {
   type Invite0421EduInviteFlowState,
 } from "../invite-0421/Invite0421EduStudentInviteFlowBody"
 import { MainAIChatWindow } from "./MainAIChatWindow"
-import { ThemeToggle } from "./ThemeToggle"
 import {
   conversations,
   currentUser,
@@ -453,11 +452,11 @@ export function MainAI(props: {
   return (
     <div className="flex h-screen w-full bg-bg-secondary relative">
       <Toaster />
-      {/* 顶栏：返回｜当前页标题（与首页入口一致）+ 复制｜（邮箱演示场景）｜主题 */}
+      {/* 顶栏：返回｜当前页标题（与首页入口一致）+ 复制｜（邮箱演示场景）｜指令集 */}
       <div className="absolute top-[var(--space-500)] left-[var(--space-500)] right-[var(--space-500)] z-50 flex items-center">
         <button
           type="button"
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/home')}
           className="flex shrink-0 items-center justify-center w-[var(--space-900)] h-[var(--space-900)] rounded-full bg-bg shadow-elevation-sm hover:bg-[var(--black-alpha-11)] transition-colors border border-border"
         >
           <ArrowLeft className="w-[var(--space-400)] h-[var(--space-400)] text-text" />
@@ -512,7 +511,7 @@ export function MainAI(props: {
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  className="mr-[length:var(--space-300)] inline-flex h-[var(--space-900)] shrink-0 items-center justify-center gap-[var(--space-100)] rounded-full border border-border bg-bg px-[var(--space-350)] text-[length:var(--font-size-xs)] text-text-secondary shadow-elevation-sm transition-colors hover:bg-[var(--black-alpha-11)] hover:text-text"
+                  className="inline-flex h-[var(--space-900)] shrink-0 items-center justify-center gap-[var(--space-100)] rounded-full border border-border bg-bg px-[var(--space-350)] text-[length:var(--font-size-xs)] text-text-secondary shadow-elevation-sm transition-colors hover:bg-[var(--black-alpha-11)] hover:text-text"
                 >
                   指令集
                   <ChevronDown className="size-[var(--icon-xs)]" aria-hidden />
@@ -536,9 +535,6 @@ export function MainAI(props: {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : null}
-          <div className="flex shrink-0 items-center justify-center w-[var(--space-900)] h-[var(--space-900)] rounded-full bg-bg shadow-elevation-sm hover:bg-[var(--black-alpha-11)] transition-colors border border-border">
-            <ThemeToggle />
-          </div>
         </div>
       </div>
 
