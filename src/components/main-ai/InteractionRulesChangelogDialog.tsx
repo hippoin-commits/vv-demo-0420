@@ -81,11 +81,8 @@ export function InteractionRulesChangelogLauncher() {
               当前为该次合并的更新说明，仅浏览。左箭头为较新版本，右箭头为较早版本。
             </DialogDescription>
             <div className="flex shrink-0 items-center gap-[length:var(--space-300)] border-b border-border px-[length:var(--space-400)] py-[length:var(--space-300)]">
-              <DialogTitle className="min-w-0 flex-1 truncate text-left text-[length:var(--font-size-sm)] font-[var(--font-weight-semibold)] leading-snug text-text">
-                更新日志：{formatChangelogDateTime(current.at)}
-              </DialogTitle>
               <div
-                className="flex shrink-0 items-center gap-0 rounded-[length:var(--radius-200)] border border-border bg-bg p-[length:var(--space-100)]"
+                className="flex shrink-0 items-center gap-0 rounded-[length:var(--radius-200)] border border-border bg-bg p-0"
                 role="group"
                 aria-label="切换更新日志版本"
               >
@@ -110,6 +107,9 @@ export function InteractionRulesChangelogLauncher() {
                   <ChevronRight className="size-[length:var(--space-400)]" strokeWidth={2} aria-hidden />
                 </button>
               </div>
+              <DialogTitle className="min-w-0 flex-1 truncate text-left text-[length:var(--font-size-sm)] font-[var(--font-weight-semibold)] leading-snug text-text">
+                更新日志：{formatChangelogDateTime(current.at)}
+              </DialogTitle>
               <DialogPrimitive.Close
                 type="button"
                 className="flex size-[length:var(--space-800)] shrink-0 items-center justify-center rounded-[length:var(--radius-200)] text-text-secondary transition-colors hover:bg-[var(--black-alpha-11)] hover:text-text focus:outline-none"

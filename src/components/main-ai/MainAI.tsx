@@ -1,6 +1,7 @@
 import * as React from "react"
 import { useLocation, useNavigate } from "react-router"
 import { ArrowLeft, Check, ChevronDown, Copy } from "lucide-react"
+import { cn } from "../ui/utils"
 import { Toaster } from "../ui/sonner"
 import { NavModulePlaceholder } from "../vv-app-shell/NavModulePlaceholder"
 import { ShortcutModulePlaceholder } from "../vv-app-shell/ShortcutModulePlaceholder"
@@ -30,6 +31,7 @@ import {
 import { getDemoNavBarTitle } from "../../constants/demoHomeNavEntries"
 import { InteractionRulesChangelogLauncher } from "./InteractionRulesChangelogDialog"
 import { InteractionRulesDocShell } from "./InteractionRulesDocShell"
+import { InteractionDemoInstructionSetShell } from "./InteractionDemoInstructionSetShell"
 import { InteractionRulesImFrameworkModule } from "./InteractionRulesImFrameworkModule"
 import type { DemoInstructionCommand } from "./demoInstructionTypes"
 import {
@@ -96,6 +98,8 @@ export function MainAI(props: {
    * 「演示区域」无特别说明时即指文档演示区域；维护约定见 `interactionRulesSpecData.ts` 顶部注释。
    */
   demoInstructionShell?: boolean;
+  /** 「交互演示指令集」页：左演示入口 + 中实际界面 + 右逻辑/指令三栏布局 */
+  demoInstructionSetShell?: boolean;
   /** 0424-权限编辑卡片方案 */
   permissionEditCard0424Demo?: boolean;
   /** 0425-案例-组织管理+权限申请 */
@@ -118,6 +122,7 @@ export function MainAI(props: {
     schedule0422DrawerDemo = false,
     initialConversationId,
     demoInstructionShell = false,
+    demoInstructionSetShell = false,
     permissionEditCard0424Demo = false,
     organizationManagement0425Demo = false,
   } = props;
@@ -175,6 +180,10 @@ export function MainAI(props: {
     React.useState(0)
   const [interactionRulesMainAiOrgDemoNonce, setInteractionRulesMainAiOrgDemoNonce] =
     React.useState(0)
+  const [interactionRulesScrollToBottomDemoNonce, setInteractionRulesScrollToBottomDemoNonce] =
+    React.useState(0)
+  const [interactionRulesMainAiDemoPrefill, setInteractionRulesMainAiDemoPrefill] =
+    React.useState({ nonce: 0, prompt: "" })
   const [interactionRulesImFrameworkDemoActive, setInteractionRulesImFrameworkDemoActive] =
     React.useState(false)
 
@@ -317,6 +326,21 @@ export function MainAI(props: {
           setShortcutId(null)
           setInteractionRulesImFrameworkDemoActive(true)
           break
+        case "showScrollToBottomThresholdDemo":
+          setInteractionRulesImFrameworkDemoActive(false)
+          setPrimaryNavId("ai")
+          setShortcutId(null)
+          setInteractionRulesScrollToBottomDemoNonce((n) => n + 1)
+          break
+        case "prefillMainAiDemoPrompt":
+          setInteractionRulesImFrameworkDemoActive(false)
+          setPrimaryNavId("ai")
+          setShortcutId(null)
+          setInteractionRulesMainAiDemoPrefill((prev) => ({
+            nonce: prev.nonce + 1,
+            prompt: cmd.prompt,
+          }))
+          break
       }
     },
     [],
@@ -379,6 +403,15 @@ export function MainAI(props: {
           }
           interactionRulesMainAiOrgDemoNonce={
             demoInstructionShell ? interactionRulesMainAiOrgDemoNonce : 0
+          }
+          interactionRulesScrollToBottomDemoNonce={
+            demoInstructionShell ? interactionRulesScrollToBottomDemoNonce : 0
+          }
+          interactionRulesMainAiDemoPrefillNonce={
+            demoInstructionShell ? interactionRulesMainAiDemoPrefill.nonce : 0
+          }
+          interactionRulesMainAiDemoPrefillPrompt={
+            demoInstructionShell ? interactionRulesMainAiDemoPrefill.prompt : ""
           }
           demoInstructionShell={demoInstructionShell}
           permissionEditCard0424Demo={permissionEditCard0424Demo}
@@ -496,12 +529,37 @@ export function MainAI(props: {
         </div>
       </div>
 
-      {demoInstructionShell ? (
+      {demoInstructionSetShell ? (
+        <InteractionDemoInstructionSetShell onCommand={handleDemoInstructionCommand}>
+          <VVAppShell
+            className={cn(
+              "h-full min-h-0 w-full min-w-0 flex-1 max-h-full overflow-hidden rounded-[length:var(--radius-400)] border border-border shadow-elevation-lg",
+              interactionRulesImFrameworkDemoActive &&
+                "[--vv-ai-frame-background:var(--vv-im-app-frame-background)]",
+            )}
+            selectedPrimaryNavId={primaryNavId}
+            onPrimaryNavChange={handlePrimaryNavChange}
+            selectedShortcutId={shortcutId}
+            onShortcutChange={invite0421ShellDockActive ? handleVVShortcutChange : setShortcutId}
+            invite0421NoOrgDock={invite0421ShellDockActive}
+            shellOrganizationActive={hasOrganization}
+            onInvite0421UnaddedShortcutClick={
+              invite0421ShellDockActive ? handleInvite0421UnaddedShortcut : undefined
+            }
+          >
+            {vvAppShellMain}
+          </VVAppShell>
+        </InteractionDemoInstructionSetShell>
+      ) : demoInstructionShell ? (
         <div className="relative flex min-h-0 min-w-0 flex-1 flex-row pt-[76px]">
           <InteractionRulesDocShell onCommand={handleDemoInstructionCommand} />
           <div className="flex min-h-0 min-w-0 flex-1 flex-col pt-0 pb-[length:var(--space-600)] pr-[length:var(--space-600)] pl-[length:var(--space-50)]">
             <VVAppShell
-              className="h-full min-h-0 w-full min-w-0 flex-1 max-h-full overflow-hidden rounded-[length:var(--radius-400)] border border-border shadow-elevation-lg"
+              className={cn(
+                "h-full min-h-0 w-full min-w-0 flex-1 max-h-full overflow-hidden rounded-[length:var(--radius-400)] border border-border shadow-elevation-lg",
+                interactionRulesImFrameworkDemoActive &&
+                  "[--vv-ai-frame-background:var(--vv-im-app-frame-background)]",
+              )}
               selectedPrimaryNavId={primaryNavId}
               onPrimaryNavChange={handlePrimaryNavChange}
               selectedShortcutId={shortcutId}

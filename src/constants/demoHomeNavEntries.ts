@@ -1,14 +1,21 @@
 /**
  * 首页入口与「演示顶栏」标题一一对应。
  * - `DEMO_HOME_PRIMARY_NAV_ENTRIES`：主按钮列（须与 `Home.tsx` 同步）。
- * - `DEMO_HOME_INTERACTION_RULES_ENTRY`：主按钮列与「业务入口」之间的「交互规范文档 - 持续更新中」入口（`Home.tsx` 单独渲染）。
+ * - `DEMO_HOME_INTERACTION_DEMO_INSTRUCTIONS_ENTRY`：主按钮列与「业务入口」之间的「交互演示指令集」入口（`Home.tsx` 单独渲染）。
+ * - `DEMO_HOME_INTERACTION_RULES_ENTRY`：置底的「交互规范文档」入口（`Home.tsx` 单独渲染）。
  */
 
 export type DemoHomeNavEntry = { readonly label: string; readonly path: string };
 
-/** 首页「业务入口」上方独立入口：与 `MainAI0421InteractionRulesPage` 对应 */
+/** 首页「业务入口」上方独立入口：与 `MainAIInteractionDemoInstructionSetPage` 对应 */
+export const DEMO_HOME_INTERACTION_DEMO_INSTRUCTIONS_ENTRY: DemoHomeNavEntry = {
+  label: "交互演示指令集",
+  path: "/main-ai-interaction-demo-instructions",
+} as const;
+
+/** 首页底部入口：与 `MainAI0421InteractionRulesPage` 对应 */
 export const DEMO_HOME_INTERACTION_RULES_ENTRY: DemoHomeNavEntry = {
-  label: "交互规范文档 - 持续更新中",
+  label: "交互规范文档",
   path: "/main-ai-0421-interaction-rules",
 } as const;
 
@@ -37,6 +44,7 @@ export const DEMO_HOME_ARCHIVED_NAV_ENTRIES: readonly DemoHomeNavEntry[] = [
 ] as const;
 
 const ALL_DEMO_NAV_ENTRIES: readonly DemoHomeNavEntry[] = [
+  DEMO_HOME_INTERACTION_DEMO_INSTRUCTIONS_ENTRY,
   DEMO_HOME_INTERACTION_RULES_ENTRY,
   ...DEMO_HOME_PRIMARY_NAV_ENTRIES,
   ...DEMO_HOME_ARCHIVED_NAV_ENTRIES,

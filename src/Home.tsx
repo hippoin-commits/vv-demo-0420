@@ -8,6 +8,7 @@ import { ComponentShowcase } from "./components/ComponentShowcase";
 import { useNavigate } from "react-router";
 import {
   DEMO_HOME_ARCHIVED_NAV_ENTRIES,
+  DEMO_HOME_INTERACTION_DEMO_INSTRUCTIONS_ENTRY,
   DEMO_HOME_INTERACTION_RULES_ENTRY,
   DEMO_HOME_PRIMARY_NAV_ENTRIES,
 } from "./constants/demoHomeNavEntries";
@@ -36,9 +37,9 @@ export function Home() {
         <Button
           variant="chat-reset"
           className="w-full whitespace-normal text-center leading-snug py-[var(--space-250)]"
-          onClick={() => navigate(DEMO_HOME_INTERACTION_RULES_ENTRY.path)}
+          onClick={() => navigate(DEMO_HOME_INTERACTION_DEMO_INSTRUCTIONS_ENTRY.path)}
         >
-          {DEMO_HOME_INTERACTION_RULES_ENTRY.label}
+          {DEMO_HOME_INTERACTION_DEMO_INSTRUCTIONS_ENTRY.label}
         </Button>
 
         <div className="w-full shrink-0 flex justify-center">
@@ -106,6 +107,14 @@ export function Home() {
             </ul>
           </HoverCardContent>
         </HoverCard>
+
+        <Button
+          variant="chat-reset"
+          className="w-full whitespace-normal text-center leading-snug py-[var(--space-250)]"
+          onClick={() => navigate(DEMO_HOME_INTERACTION_RULES_ENTRY.path)}
+        >
+          {DEMO_HOME_INTERACTION_RULES_ENTRY.label}
+        </Button>
       </div>
     </div>
   );

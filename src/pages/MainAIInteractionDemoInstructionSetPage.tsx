@@ -2,9 +2,9 @@ import * as React from "react";
 import { MainAI } from "../components/main-ai/MainAI";
 
 /**
- * 交互规范文档（首页入口「交互规范文档」）：主 AI / 教育空态 / 学生邀请流与 Edu 学生页一致；左侧为 **文档演示区域**（见 `interactionRulesSpecData.ts` 约定），右侧为实景产品区。
+ * 交互演示指令集：复制「交互规范文档」的实际产品区，外层改为左演示入口 / 中实际界面 / 右逻辑指令三栏。
  */
-export function MainAI0421InteractionRulesPage() {
+export function MainAIInteractionDemoInstructionSetPage() {
   return (
     <MainAI
       hasOrganization={false}
@@ -15,6 +15,7 @@ export function MainAI0421InteractionRulesPage() {
       alwaysShowIndependentWindow
       noEduSpace0421ChatToolbar
       demoInstructionShell
+      demoInstructionSetShell
       organizationManagement0425Demo
     />
   );

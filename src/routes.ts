@@ -5,6 +5,7 @@ import { MainAIPage } from "./pages/MainAIPage";
 import { MainAI0421NewUserInvitedOrgPage } from "./pages/MainAI0421NewUserInvitedOrgPage";
 import { MainAI0421NewUserInvitedEduStudentPage } from "./pages/MainAI0421NewUserInvitedEduStudentPage";
 import { MainAI0421InteractionRulesPage } from "./pages/MainAI0421InteractionRulesPage";
+import { MainAIInteractionDemoInstructionSetPage } from "./pages/MainAIInteractionDemoInstructionSetPage";
 import { MainAI0424PermissionEditCardPage } from "./pages/MainAI0424PermissionEditCardPage";
 import { MainAI0425OrganizationManagementPage } from "./pages/MainAI0425OrganizationManagementPage";
 import { MainAI0422ScheduleDrawerDemoPage } from "./pages/MainAI0422ScheduleDrawerDemoPage";
@@ -33,6 +34,10 @@ export const router = createMemoryRouter(
         {
           path: "main-ai-0421-new-user-invited-edu-student",
           Component: MainAI0421NewUserInvitedEduStudentPage,
+        },
+        {
+          path: "main-ai-interaction-demo-instructions",
+          Component: MainAIInteractionDemoInstructionSetPage,
         },
         {
           path: "main-ai-0421-interaction-rules",
