@@ -608,8 +608,6 @@ export function TaskDetailCard({
   detailToolbarVariant = "default",
   /** 演示规范：将底部操作栏迁移到任务标题下方，主体信息区保持不变 */
   detailToolbarPlacement = "bottom",
-  /** 主 AI 下的卡片上下文入口，例如组织 / 空间切换 */
-  titleBelowAccessory,
   /** 原位置编辑保存后：在卡牌首行标题右侧展示小号更新时间 */
   titleUpdatedAt,
 }: {
@@ -618,7 +616,6 @@ export function TaskDetailCard({
   onPushTaskChatCard?: (kind: TaskChatCardKind, options?: TaskPushChatCardOptions) => void;
   detailToolbarVariant?: "default" | "figma0417";
   detailToolbarPlacement?: "bottom" | "underTaskTitle";
-  titleBelowAccessory?: React.ReactNode;
   titleUpdatedAt?: string;
 }) {
   /** 非任务会话（无 onPushTaskChatCard）时「沟通」入口仍打开侧栏 */
@@ -842,7 +839,6 @@ export function TaskDetailCard({
               </span>
             ) : undefined
           }
-          titleBelowAccessory={titleBelowAccessory}
           className="overflow-hidden"
         >
           <div className="w-full flex flex-col gap-[var(--space-300)]">

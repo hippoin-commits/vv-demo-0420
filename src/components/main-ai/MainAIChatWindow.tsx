@@ -5531,7 +5531,6 @@ export function MainAIChatWindow({
                         detail={detail}
                         detailToolbarVariant={inPlacePositioningDemo ? "figma0417" : detailToolbarVariant0417}
                         detailToolbarPlacement={inPlacePositioningDemo ? "underTaskTitle" : "bottom"}
-                        titleBelowAccessory={inPlacePositioningDemo ? mainAiOrgScopeBarEl : undefined}
                         titleUpdatedAt={
                           isInPlaceInlineEditFlow && justUpdated0417 ? parsed.updatedAtTime : undefined
                         }
