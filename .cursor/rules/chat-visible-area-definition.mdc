@@ -1,0 +1,15 @@
+---
+description: Define the default visible area for chat positioning and slot height
+alwaysApply: true
+---
+
+# Chat Visible Area Definition
+
+- Unless the user explicitly says otherwise, 「可视区域」 in chat positioning, slot height, scroll alignment, and "go to bottom" threshold work means:
+  - the area between the chat top bar and bottom bar;
+  - minus visible shortcut entry height;
+  - minus collapsed pinned todo card height.
+- If shortcut entries or the pinned todo card do not exist in the current context, do not subtract that missing height.
+- Do not use the raw window height or raw scroll container height as the final visible area when these occupied regions are present.
+- New conversation slot height is always fixed to `max(200px, round(可视区域 * 0.8))` across the system.
+- This 80% rule is a global default from page load, not a demo-node-triggered mode or an adjustable setting.

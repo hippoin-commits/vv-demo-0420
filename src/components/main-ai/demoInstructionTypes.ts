@@ -11,7 +11,7 @@ export type DemoInstructionCommand =
   | { kind: "showMainAiOrgManagementSwitcherDemo" }
   /** 交互规范文档「5.1」：切至主导航「消息」并展示 IM 界面框架（MCP 设计对齐，演示） */
   | { kind: "openImFrameworkDemo" }
-  /** 交互演示指令集：生成长对话并滚离底部，用于展示「去底部」按钮阈值 */
+  /** 交互演示指令集：自动发送去底部按钮演示句，并滚到对话流顶部以展示按钮 */
   | { kind: "showScrollToBottomThresholdDemo" }
   /** 交互演示指令集：只切回主 AI 并预填指令，不直接生成对话内容 */
   | { kind: "prefillMainAiDemoPrompt"; prompt: string }

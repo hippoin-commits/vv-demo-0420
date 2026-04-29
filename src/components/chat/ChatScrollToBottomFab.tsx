@@ -38,9 +38,22 @@ export function ChatScrollToBottomFab({
   getDistanceThresholdPx,
 }: ChatScrollToBottomFabProps) {
   const [awayFromBottom, setAwayFromBottom] = React.useState(false);
+  const scrollRafRef = React.useRef<number | null>(null);
+  const settleTimeoutRef = React.useRef<number | null>(null);
 
   const getThresholdRef = React.useRef(getDistanceThresholdPx);
   getThresholdRef.current = getDistanceThresholdPx;
+
+  const cancelPendingScroll = React.useCallback(() => {
+    if (scrollRafRef.current !== null) {
+      cancelAnimationFrame(scrollRafRef.current);
+      scrollRafRef.current = null;
+    }
+    if (settleTimeoutRef.current !== null) {
+      window.clearTimeout(settleTimeoutRef.current);
+      settleTimeoutRef.current = null;
+    }
+  }, []);
 
   const update = React.useCallback(() => {
     const el = scrollRootRef.current;
@@ -61,16 +74,56 @@ export function ChatScrollToBottomFab({
     };
   }, [scrollRootRef, update, layoutSyncKey]);
 
+  React.useEffect(() => cancelPendingScroll, [cancelPendingScroll]);
+
   const scrollToBottom = React.useCallback(() => {
     const el = scrollRootRef.current;
     if (!el) return;
-    const run = (behavior: ScrollBehavior) => {
-      el.scrollTo({ top: el.scrollHeight, behavior });
+
+    cancelPendingScroll();
+
+    const getBottom = () => Math.max(0, el.scrollHeight - el.clientHeight);
+    const settle = () => {
+      el.scrollTop = getBottom();
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        el.scrollTop = getBottom();
+        update();
+      }));
+      settleTimeoutRef.current = window.setTimeout(() => {
+        el.scrollTop = getBottom();
+        update();
+        settleTimeoutRef.current = null;
+      }, 120);
     };
-    run("smooth");
-    requestAnimationFrame(() => requestAnimationFrame(() => run("auto")));
-    window.setTimeout(() => run("auto"), 150);
-  }, [scrollRootRef]);
+
+    const reducedMotion =
+      window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    const startTop = el.scrollTop;
+    const targetTop = getBottom();
+    const distance = targetTop - startTop;
+
+    if (reducedMotion || Math.abs(distance) < 1) {
+      settle();
+      return;
+    }
+
+    const durationMs = 300;
+    const startTime = performance.now();
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - startTime) / durationMs);
+      const eased = progress < 0.5
+        ? 2 * progress * progress
+        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+      el.scrollTop = startTop + distance * eased;
+      if (progress < 1) {
+        scrollRafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+      scrollRafRef.current = null;
+      settle();
+    };
+    scrollRafRef.current = requestAnimationFrame(tick);
+  }, [cancelPendingScroll, scrollRootRef, update]);
 
   if (!awayFromBottom) return null;
 

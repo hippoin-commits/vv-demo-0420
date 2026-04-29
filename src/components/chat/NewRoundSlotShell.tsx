@@ -3,17 +3,17 @@ import { motion } from "motion/react";
 import { cn } from "../ui/utils";
 
 export type NewRoundSlotShellProps = {
-  /** 槽位固定高度（统一由 `computeNewRoundSlotHeightPx` 按可用阅读区 70% 计算） */
+  /** 槽位固定高度（统一由 `computeNewRoundSlotHeightPx` 按 80% 对话可视区域计算） */
   heightPx: number;
   /** 与主对话列表消息之间的纵向间距 token 一致（主 AI 用户↔系统为 `--space-600`） */
   messageGapClassName?: string;
   children: React.ReactNode;
   /** 当槽内内容高度超过槽位高度时调用，由父级解除槽位、恢复自然高度 */
   onContentExceedsSlot: () => void;
-  /** 供父级做两阶段滚动的锚点 */
+  /** 供父级做槽位顶对齐的锚点 */
   shellRef?: React.Ref<HTMLDivElement>;
   /**
-   * 与主窗槽位滚动总时长对齐：先滚到空槽，再延迟若干 ms 后子内容位移动效出现（避免与滚动抢同一帧）。
+   * 与主窗槽位滚动总时长对齐：先完成槽位顶对齐，再延迟若干 ms 后子内容位移动效出现（避免与滚动抢同一帧）。
    * 0 或未传则不做延迟显现。
    */
   revealChildrenAfterMs?: number;
@@ -47,8 +47,8 @@ export function NewRoundSlotShell({
     const inner = innerRef.current;
     if (!inner) return;
     /**
-     * 初始保护期（= 父级两阶段滚动窗口）：避免新卡片高度 > 槽位时立即 release，
-     * 导致父级 runPhase2 读到 shellRef=null、跳过"顶对齐吸顶下缘"，视觉像没做空屏。
+     * 初始保护期（= 父级槽位对齐窗口）：避免新卡片高度 > 槽位时立即 release，
+     * 导致父级读到 shellRef=null、跳过顶对齐，视觉像没做空屏。
      * 到期后再评估；若此时仍 exceed 则交还自然高度（与原行为等价）。
      */
     const guardMs = Math.max(0, revealChildrenAfterMs) + 50;

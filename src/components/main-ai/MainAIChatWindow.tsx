@@ -606,12 +606,12 @@ interface MainAIChatWindowProps {
    * 交互规范文档「3.2」：递增时在主 AI 插入 0425 组织管理卡；默认在卡片内标题下展示组织切换（方案1），可通过行动建议切换为卡外左对齐切换条（方案2）。
    */
   interactionRulesMainAiOrgDemoNonce?: number
-  /** 交互演示指令集：递增时生成长对话并滚离底部，展示「去底部」按钮阈值 */
+  /** 交互演示指令集：递增时自动发送去底部按钮演示句，并滚到对话流顶部 */
   interactionRulesScrollToBottomDemoNonce?: number
   /** 交互演示指令集：递增时只切回主 AI 并预填输入框，不直接注入消息 */
   interactionRulesMainAiDemoPrefillNonce?: number
   interactionRulesMainAiDemoPrefillPrompt?: string
-  /** 「交互规范文档」页：为 true 时启用文档页专用新一轮槽位高度策略（见 `armNewRoundForUserSend`） */
+  /** 「交互规范文档」页：为 true 时启用文档页专用演示路径 */
   demoInstructionShell?: boolean
   /** 0424-权限编辑卡片方案：主 AI 输入含触发词后出现权限编辑 CUI 卡片（演示） */
   permissionEditCard0424Demo?: boolean
@@ -849,7 +849,7 @@ function messageContentIsInChatSurfaceCard(content: string): boolean {
 
 /** 点击「操作来源」回到原消息：滚动过渡固定时长 */
 const OPERATION_SOURCE_SCROLL_DURATION_MS = 300;
-/** 槽位两阶段滚动、卡片顶对齐等主对话区滚动动画时长 */
+/** 槽位顶对齐、卡片顶对齐等主对话区滚动动画时长 */
 const CHAT_SCROLL_ALIGN_DURATION_MS = 300;
 
 function easeInOutQuad(t: number): number {
@@ -911,23 +911,45 @@ function computeScrollTopToAlignElementTopBelowPin(
   return Math.max(0, Math.min(raw, maxTop));
 }
 
+const CHAT_SLOT_EXCLUSION_SELECTOR = '[data-chat-slot-exclusion="true"]';
+
+function getVisibleHeightWithinContainer(container: HTMLElement, el: HTMLElement): number {
+  const containerRect = container.getBoundingClientRect();
+  const elRect = el.getBoundingClientRect();
+  const top = Math.max(containerRect.top, elRect.top);
+  const bottom = Math.min(containerRect.bottom, elRect.bottom);
+  return Math.max(0, bottom - top);
+}
+
+function computeChatSlotExcludedHeight(
+  container: HTMLElement,
+  pinEl: HTMLElement | null
+): number {
+  const usePin = pinEl != null && container.contains(pinEl);
+  const pinHeight = usePin ? getVisibleHeightWithinContainer(container, pinEl) : 0;
+  const dynamicExcludedHeight = Array.from(
+    container.querySelectorAll<HTMLElement>(CHAT_SLOT_EXCLUSION_SELECTOR)
+  ).reduce((sum, el) => {
+    if (pinEl && (el === pinEl || el.contains(pinEl) || pinEl.contains(el))) return sum;
+    return sum + getVisibleHeightWithinContainer(container, el);
+  }, 0);
+
+  return Math.min(container.clientHeight, Math.max(0, pinHeight + dynamicExcludedHeight));
+}
+
 function computeScrollTopToAlignElementTopAtSlotTop(
   container: HTMLElement,
   el: HTMLElement,
-  pinEl: HTMLElement | null,
-  demoInstructionShell: boolean
+  pinEl: HTMLElement | null
 ): number {
-  const usePin = pinEl != null && container.contains(pinEl);
   const containerTop = container.getBoundingClientRect().top;
-  const pinBottom = usePin ? pinEl.getBoundingClientRect().bottom : containerTop;
-  const pinOffsetPx = Math.max(0, pinBottom - containerTop);
+  const excludedHeightPx = computeChatSlotExcludedHeight(container, pinEl);
   const slotHeightPx = computeNewRoundSlotHeightPx({
     chatClientHeight: container.clientHeight,
-    pinOverlayHeight: pinOffsetPx,
-    demoInstructionShell,
+    pinOverlayHeight: excludedHeightPx,
   });
-  const slotTopOffsetPx = Math.max(0, container.clientHeight - pinOffsetPx - slotHeightPx);
-  const anchorTop = pinBottom + slotTopOffsetPx;
+  const slotTopOffsetPx = Math.max(0, container.clientHeight - excludedHeightPx - slotHeightPx);
+  const anchorTop = containerTop + excludedHeightPx + slotTopOffsetPx;
   const elRect = el.getBoundingClientRect();
   const raw = container.scrollTop + (elRect.top - anchorTop);
   const maxTop = Math.max(0, container.scrollHeight - container.clientHeight);
@@ -1992,6 +2014,7 @@ export function MainAIChatWindow({
   >(null)
   const [interactionRulesOrgCardResetKey, setInteractionRulesOrgCardResetKey] = React.useState(0)
   const lastInteractionRulesOrgSwitcherDemoNonceRef = React.useRef(0)
+  const lastInteractionRulesScrollToBottomDemoNonceRef = React.useRef(0)
   const scrollRef = React.useRef<HTMLDivElement>(null)
   /** 当前列表最后一条消息的外层容器，用于新卡片打开时滚至卡片顶部对齐视口 */
   const latestMessageRowRef = React.useRef<HTMLDivElement>(null)
@@ -2005,7 +2028,7 @@ export function MainAIChatWindow({
   const chatContainerRef = React.useRef<HTMLDivElement>(null)
   /** 独立浮窗内对话滚动容器（与主窗 `chatContainerRef` 分离） */
   const floatingChatScrollRef = React.useRef<HTMLDivElement>(null)
-  /** 新一轮对话底部槽位外框（两阶段滚动：先贴底再对齐槽顶） */
+  /** 新一轮对话槽位外框：本轮第一条消息进入时即对齐槽顶 */
   const newRoundShellRef = React.useRef<HTMLDivElement>(null)
   /** 槽位武装后的首帧对齐是否已执行，避免随每条消息重复滚动 */
   const newRoundScrollAppliedRef = React.useRef(false)
@@ -2190,7 +2213,7 @@ export function MainAIChatWindow({
   }, [scrollPanelToBottom]);
 
   /**
-   * 新出「对话区卡片」时：将该消息行顶部对齐到 70% 阅读槽位顶部，300ms 过渡。
+   * 新出「对话区卡片」时：将该消息行顶部对齐到当前阅读槽位顶部，300ms 过渡。
    */
   const scrollLatestCardRowToTop = React.useCallback((el: HTMLElement | null) => {
     if (!el) return;
@@ -2213,7 +2236,11 @@ export function MainAIChatWindow({
       return;
     }
     const pin = pinnedTaskStickyRef.current;
-    const target = computeScrollTopToAlignElementTopAtSlotTop(container, el, pin, demoInstructionShell);
+    const target = computeScrollTopToAlignElementTopAtSlotTop(
+      container,
+      el,
+      pin
+    );
     animateContainerScrollTop(
       container,
       target,
@@ -2223,15 +2250,14 @@ export function MainAIChatWindow({
         const t = computeScrollTopToAlignElementTopAtSlotTop(
           container,
           el,
-          pinnedTaskStickyRef.current,
-          demoInstructionShell
+          pinnedTaskStickyRef.current
         );
         if (Math.abs(container.scrollTop - t) > 1) {
           container.scrollTop = t;
         }
       }
     );
-  }, [is0419Explore, activeApp, demoInstructionShell]);
+  }, [is0419Explore, activeApp]);
 
   const forceAlignNewRoundAnchorToTop = React.useCallback(() => {
     const run = () => {
@@ -2242,7 +2268,6 @@ export function MainAIChatWindow({
         container,
         anchor,
         pinnedTaskStickyRef.current,
-        demoInstructionShell,
       );
       animateContainerScrollTop(
         container,
@@ -2252,7 +2277,7 @@ export function MainAIChatWindow({
       );
     };
     requestAnimationFrame(() => requestAnimationFrame(run));
-  }, [demoInstructionShell]);
+  }, []);
 
   /** 点击「操作来源」时滚动到对应消息行（依赖 data-message-id）；固定 300ms 插值过渡 */
   const scrollToMessageById = React.useCallback((messageId: string) => {
@@ -2321,10 +2346,11 @@ export function MainAIChatWindow({
    * 新一轮对话的「空屏槽位」底层实现：先收起吸顶卡片（同步布局便于测量），再武装槽位。
    * 槽高 = 滚动容器可视高 − 吸顶区高度；无吸顶时（非 0419 且非主 AI）用满高。
    * 调用约束（勿随意外调）：
-   *  - 只在 **用户操作** 且该操作会 **在末尾追加一条新消息 / 新卡片** 的路径上调用；
+   *  - 只在开启新一轮、且该轮会在末尾追加第一条新消息 / 新卡片的路径上调用；
+   *  - 第一条消息可以来自用户，也可以来自系统或 AI，不能只按用户消息判断；
    *  - **原位置切换卡片形态 / 更新卡片数据**（如「浏览 ↔ 编辑」「提交后转只读」）
    *    属于同一轮，请走 `scrollInPlaceMutatedCardToTop(id)`，**不要** 武装新一轮槽位。
-   *  - 建议统一经由 `beginNewUserChatRound(surface)`，它会根据当前 `activeApp` / 0419 语境
+   *  - 建议统一经由新一轮入口函数，它会根据当前 `activeApp` / 0419 语境
    *    自动计算 `startMessageIndex`。
    */
   const armNewRoundForUserSend = React.useCallback(
@@ -2339,13 +2365,17 @@ export function MainAIChatWindow({
       }
       const c = chatContainerRef.current
       const pin = pinnedTaskStickyRef.current
-      /** 对话滚动区可视高度（≈ 顶栏 ChatNavBar 之下到底栏输入/快捷栏之上的区域） */
+      /** 对话可视区域：顶栏到底栏之间，再扣除 sticky 待办卡片与当前可见快捷入口 */
       const fullH = c?.clientHeight ?? 480
-      const pinH = showPinnedExplorer && pin ? pin.offsetHeight : 0
+      const excludedH =
+        c && showPinnedExplorer
+          ? computeChatSlotExcludedHeight(c, pin)
+          : c
+            ? computeChatSlotExcludedHeight(c, null)
+            : 0
       const slotHeightPx = computeNewRoundSlotHeightPx({
         chatClientHeight: fullH,
-        pinOverlayHeight: pinH,
-        demoInstructionShell,
+        pinOverlayHeight: excludedH,
       })
       sameRoundScrollSuppressRef.current = {
         minOrdinal: startMessageIndex,
@@ -2359,7 +2389,7 @@ export function MainAIChatWindow({
         armedIs0419Explore: is0419Explore,
       })
     },
-    [is0419Explore, activeApp, demoInstructionShell]
+    [is0419Explore, activeApp]
   )
 
   // Floating Windows State
@@ -3052,8 +3082,7 @@ export function MainAIChatWindow({
             const target = computeScrollTopToAlignElementTopAtSlotTop(
               container,
               el,
-              pinnedTaskStickyRef.current,
-              demoInstructionShell
+              pinnedTaskStickyRef.current
             );
             animateContainerScrollTop(
               container,
@@ -3067,7 +3096,7 @@ export function MainAIChatWindow({
         });
       });
     },
-    [demoInstructionShell, scrollToMessageById]
+    [scrollToMessageById]
   );
 
   const updateMailMessages = React.useCallback(
@@ -3356,17 +3385,11 @@ export function MainAIChatWindow({
                 ? employeeMessages0425
                 : messages;
 
-    let currentRoundHasCard = false;
     if (newRoundSlot) {
       const slotMatches =
         newRoundSlot.armedIs0419Explore === is0419Explore &&
         newRoundSlot.armedActiveApp === activeApp;
-      currentRoundHasCard =
-        list.length > newRoundSlot.startMessageIndex &&
-        list
-          .slice(newRoundSlot.startMessageIndex)
-          .some((item) => messageContentIsInChatSurfaceCard(item.content));
-      if (slotMatches && currentRoundHasCard) {
+      if (slotMatches && list.length > newRoundSlot.startMessageIndex) {
         return;
       }
     }
@@ -3376,7 +3399,7 @@ export function MainAIChatWindow({
       const listCtxOk =
         sup.armedIs0419Explore === is0419Explore && sup.armedActiveApp === activeApp;
       const lastIdx = list.length - 1;
-      if (listCtxOk && currentRoundHasCard && lastIdx >= sup.minOrdinal) {
+      if (listCtxOk && lastIdx >= sup.minOrdinal) {
         return;
       }
     }
@@ -3410,7 +3433,7 @@ export function MainAIChatWindow({
     is0419Explore,
   ]);
 
-  /** 新一轮对话：先动画滚至槽内底（留白），再动画将槽顶对齐 70% 阅读槽位顶部（共 300ms） */
+  /** 新一轮对话：本轮第一条消息进入槽位后，立即将槽顶对齐当前阅读槽位顶部。 */
   React.useLayoutEffect(() => {
     if (!newRoundSlot) {
       newRoundScrollAppliedRef.current = false;
@@ -3446,10 +3469,7 @@ export function MainAIChatWindow({
     const slotEl = newRoundShellRef.current;
     if (!container || !slotEl) return;
 
-    const halfMs = CHAT_SCROLL_ALIGN_DURATION_MS / 2;
-    const maxScroll = Math.max(0, container.scrollHeight - container.clientHeight);
-
-    const runPhase2 = () => {
+    const runAlign = () => {
       const c = chatContainerRef.current;
       const s = newRoundShellRef.current;
       const p = pinnedTaskStickyRef.current;
@@ -3458,8 +3478,8 @@ export function MainAIChatWindow({
         return;
       }
       /**
-       * 保险：若槽位在 phase1 期间被 onContentExceedsSlot 释放，shellRef 已 null，
-       * 退回「最后一条消息行顶对齐阅读槽位顶部」，保证本轮新卡片遵循 70% 槽位。
+       * 保险：若槽位在对齐期间被 onContentExceedsSlot 释放，shellRef 已 null，
+       * 退回「最后一条消息行顶对齐阅读槽位顶部」，保证本轮内容遵循 80% 槽位。
        */
       if (!s) {
         const anchor = latestMessageRowRef.current;
@@ -3467,13 +3487,17 @@ export function MainAIChatWindow({
         newRoundScrollAppliedRef.current = true;
         return;
       }
-      const alignTarget = computeScrollTopToAlignElementTopAtSlotTop(c, s, p, demoInstructionShell);
-      animateContainerScrollTop(c, alignTarget, halfMs, chatScrollAlignRafRef, () => {
+      const alignTarget = computeScrollTopToAlignElementTopAtSlotTop(
+        c,
+        s,
+        p
+      );
+      animateContainerScrollTop(c, alignTarget, CHAT_SCROLL_ALIGN_DURATION_MS, chatScrollAlignRafRef, () => {
         newRoundScrollAppliedRef.current = true;
       });
     };
 
-    animateContainerScrollTop(container, maxScroll, halfMs, chatScrollAlignRafRef, runPhase2);
+    runAlign();
   }, [
     newRoundSlot,
     messages,
@@ -3483,7 +3507,6 @@ export function MainAIChatWindow({
     organizationMessages0425,
     employeeMessages0425,
     organizationManagement0425Demo,
-    demoInstructionShell,
     activeApp,
     is0419Explore,
   ]);
@@ -3667,6 +3690,14 @@ export function MainAIChatWindow({
   React.useEffect(() => {
     if (!demoInstructionShell) return;
     if (!interactionRulesScrollToBottomDemoNonce) return;
+    if (
+      interactionRulesScrollToBottomDemoNonce <=
+      lastInteractionRulesScrollToBottomDemoNonceRef.current
+    ) {
+      return;
+    }
+    lastInteractionRulesScrollToBottomDemoNonceRef.current =
+      interactionRulesScrollToBottomDemoNonce;
 
     setActiveApp(null);
     setSchedule0422DrawerOpen(false);
@@ -3678,41 +3709,45 @@ export function MainAIChatWindow({
       {
         id: `scroll-threshold-user-${now}`,
         senderId: currentUser.id,
-        content: "演示去底部按钮阈值",
+        content: "演示：查看去底部按钮逻辑",
         timestamp: ts,
         createdAt: now,
       },
-      ...Array.from({ length: 10 }, (_, idx) => ({
-        id: `scroll-threshold-bot-${now}-${idx}`,
+      {
+        id: `scroll-threshold-bot-${now}`,
         senderId: conversation.user.id,
-        content:
-          idx === 0
-            ? "（演示）下面会追加一段较长对话，并自动滚离底部。距离底部超过当前槽位高度时，去底部按钮应出现。"
-            : `（演示）第 ${idx + 1} 条占位消息：用于拉开滚动距离，验证按钮阈值与新轮槽位高度保持一致。`,
+        content: "当用户向上滑动对话时，将显示【去底部】按钮，点击定位到对话底部",
         timestamp: ts,
-        createdAt: now + idx + 1,
+        createdAt: now + 1,
         isAfterPrompt: true,
-      })),
+      },
     ];
 
-    beginNewUserChatRound("main");
+    /**
+     * 该演示要展示“远离底部”的状态，不走新一轮槽位对齐；
+     * 否则槽位定位会把视图拉回本轮消息附近，覆盖滚到对话流顶部的演示目标。
+     */
+    skipNextChatLayoutScrollRef.current = true;
+    setNewRoundSlot(null);
+    sameRoundScrollSuppressRef.current = null;
     setMessages((prev) => [...prev, ...demoMessages]);
 
     const scrollAway = () => {
       const c = chatContainerRef.current;
       if (!c) return;
-      c.scrollTo({ top: Math.max(0, c.scrollHeight - c.clientHeight * 2), behavior: "auto" });
+      c.scrollTo({ top: 0, behavior: "auto" });
     };
     const raf = requestAnimationFrame(() => requestAnimationFrame(scrollAway));
     const timeout = window.setTimeout(scrollAway, 120);
+    const lateTimeout = window.setTimeout(scrollAway, 320);
     return () => {
       cancelAnimationFrame(raf);
       window.clearTimeout(timeout);
+      window.clearTimeout(lateTimeout);
     };
   }, [
     demoInstructionShell,
     interactionRulesScrollToBottomDemoNonce,
-    beginNewUserChatRound,
     conversation.user.id,
   ]);
 
@@ -4894,7 +4929,7 @@ export function MainAIChatWindow({
           : activeApp === "mail"
             ? "gap-[var(--space-150)]"
             : "gap-[var(--space-600)]",
-      /** 与槽位两阶段滚动总时长一致：先到位空屏，再淡入本轮内容 */
+      /** 与槽位顶对齐滚动时长一致：先对齐槽位，再淡入本轮内容 */
       revealChildrenAfterMs: CHAT_SCROLL_ALIGN_DURATION_MS,
     };
   }, [newRoundSlot, is0419Explore, activeApp, releaseNewRoundSlot]);
@@ -4937,23 +4972,27 @@ export function MainAIChatWindow({
     const pin = pinnedTaskStickyRef.current;
     const showPinnedExplorer = is0419Explore || activeApp === null;
     const fullH = c?.clientHeight ?? 480;
-    const pinH = showPinnedExplorer && pin ? pin.offsetHeight : 0;
+    const excludedH =
+      c && showPinnedExplorer
+        ? computeChatSlotExcludedHeight(c, pin)
+        : c
+          ? computeChatSlotExcludedHeight(c, null)
+          : 0;
     return computeNewRoundSlotHeightPx({
       chatClientHeight: fullH,
-      pinOverlayHeight: pinH,
-      demoInstructionShell,
+      pinOverlayHeight: excludedH,
     });
-  }, [is0419Explore, activeApp, demoInstructionShell]);
+  }, [is0419Explore, activeApp]);
 
   const getFloatingChatScrollFabDistanceThresholdPx = React.useCallback(() => {
     const c = floatingChatScrollRef.current;
     const fullH = c?.clientHeight ?? 480;
+    const excludedH = c ? computeChatSlotExcludedHeight(c, null) : 0;
     return computeNewRoundSlotHeightPx({
       chatClientHeight: fullH,
-      pinOverlayHeight: 0,
-      demoInstructionShell,
+      pinOverlayHeight: excludedH,
     });
-  }, [demoInstructionShell]);
+  }, []);
 
   const renderMessageList = (
     messagesList: Message[],
@@ -6976,12 +7015,6 @@ export function MainAIChatWindow({
     ) {
       const head = messageElements.slice(0, slotWrapConfig.startMessageIndex);
       const tail = messageElements.slice(slotWrapConfig.startMessageIndex);
-      const tailHasCard = messagesList
-        .slice(slotWrapConfig.startMessageIndex)
-        .some((msg) => messageContentIsInChatSurfaceCard(msg.content));
-      if (!tailHasCard) {
-        return messageElements;
-      }
       return [
         ...head,
         <NewRoundSlotShell
@@ -7106,7 +7139,10 @@ export function MainAIChatWindow({
     messages.length === 0 ? (
       <div className="flex w-full flex-col gap-[var(--space-200)]">
         <ChatWelcome avatarSrc={conversation.user.avatar} greeting={explore0419AssistantGreeting} />
-        <div className="flex flex-wrap gap-[var(--space-200)] w-full md:ml-[44px]">
+        <div
+          data-chat-slot-exclusion="true"
+          className="flex flex-wrap gap-[var(--space-200)] w-full md:ml-[44px]"
+        >
           <ChatPromptButton
             onClick={() => {
               setInputValue("查看我的个人信息");
@@ -7562,7 +7598,10 @@ export function MainAIChatWindow({
                   variant={invite0421EduStudentFlow ? "eduStudent" : "orgInvited"}
                   assistantAvatarSrc={conversation.user.avatar}
                 />
-                <div className="scrollbar-hide flex w-full min-w-0 max-w-full flex-nowrap items-center justify-start gap-[length:var(--space-150)] overflow-x-auto overflow-y-hidden pb-[length:var(--space-50)] md:ml-[44px]">
+                <div
+                  data-chat-slot-exclusion="true"
+                  className="scrollbar-hide flex w-full min-w-0 max-w-full flex-nowrap items-center justify-start gap-[length:var(--space-150)] overflow-x-auto overflow-y-hidden pb-[length:var(--space-50)] md:ml-[44px]"
+                >
                   <ChatPromptButton
                     type="button"
                     onClick={() => toast("即将为您播放 V V AI 介绍视频（占位）")}
@@ -7590,7 +7629,10 @@ export function MainAIChatWindow({
               <div className="flex flex-col gap-[var(--space-200)] w-full">
                 <ChatWelcome avatarSrc={conversation.user.avatar} greeting={`下午好，请问有什么可以帮到你？`} />
                 {messages.length === 0 ? (
-                  <div className="flex flex-wrap gap-[var(--space-200)] w-full md:ml-[44px]">
+                  <div
+                    data-chat-slot-exclusion="true"
+                    className="flex flex-wrap gap-[var(--space-200)] w-full md:ml-[44px]"
+                  >
                     <ChatPromptButton
                       onClick={() => {
                         setInputValue("查看我的个人信息");
@@ -7632,7 +7674,10 @@ export function MainAIChatWindow({
                       : `欢迎使用教育，您还没有创建任何教育空间。如果您是教育机构，请选择创建机构教育空间，如果您是学生或家长，请选择创建家庭教育空间。`
                   }
                 />
-                <div className="flex flex-wrap gap-[var(--space-200)] w-full md:ml-[44px]">
+                <div
+                  data-chat-slot-exclusion="true"
+                  className="flex flex-wrap gap-[var(--space-200)] w-full md:ml-[44px]"
+                >
                   <ChatPromptButton onClick={handleCreateInstitutionSpace}>
                     {invite0421EduStudentFlow
                       ? INVITE0421_EDU_STUDENT_EMPTY_SPACE_NAV.createInstitutionTitle
@@ -7655,7 +7700,10 @@ export function MainAIChatWindow({
                   greeting={`你好，我是你的教育专属AI助手。请问今天需要处理什么？`}
                 />
                 {educationMessages.length === 0 ? (
-                  <div className="flex flex-wrap gap-[var(--space-200)] w-full md:ml-[44px]">
+                  <div
+                    data-chat-slot-exclusion="true"
+                    className="flex flex-wrap gap-[var(--space-200)] w-full md:ml-[44px]"
+                  >
                     {renderEducationWelcomeActionChips()}
                   </div>
                 ) : null}
@@ -7670,7 +7718,10 @@ export function MainAIChatWindow({
                   avatarSrc={conversation.user.avatar}
                   greeting="你好，我是你的任务专属AI助手。请问今天需要处理什么？"
                 />
-                <div className="flex flex-wrap gap-[var(--space-200)] w-full md:ml-[44px]">
+                <div
+                  data-chat-slot-exclusion="true"
+                  className="flex flex-wrap gap-[var(--space-200)] w-full md:ml-[44px]"
+                >
                   <ChatPromptButton
                     onClick={() => {
                       beginNewUserChatRound("task");
@@ -7714,7 +7765,10 @@ export function MainAIChatWindow({
                   avatarSrc={conversation.user.avatar}
                   greeting={getDemoMailWelcomeGreeting()}
                 />
-                <div className="scrollbar-hide flex w-full min-w-0 max-w-full flex-nowrap items-center gap-[var(--space-150)] overflow-x-auto overflow-y-hidden pb-[var(--space-50)] md:ml-[44px]">
+                <div
+                  data-chat-slot-exclusion="true"
+                  className="scrollbar-hide flex w-full min-w-0 max-w-full flex-nowrap items-center gap-[var(--space-150)] overflow-x-auto overflow-y-hidden pb-[var(--space-50)] md:ml-[44px]"
+                >
                   <ChatPromptButton type="button" onClick={() => appendMailWelcomeAction("personal_inbox")}>
                     我的邮箱
                   </ChatPromptButton>
@@ -7734,7 +7788,10 @@ export function MainAIChatWindow({
                 greeting="你好，我是你的日程专属 AI 助手。可以用底部快捷入口打开列表，或直接描述你的安排。"
               />
               {messages.length === 0 ? (
-                <div className="flex flex-wrap gap-[var(--space-200)] w-full md:ml-[44px]">
+                <div
+                  data-chat-slot-exclusion="true"
+                  className="flex flex-wrap gap-[var(--space-200)] w-full md:ml-[44px]"
+                >
                   <ChatPromptButton
                     type="button"
                     onClick={() => {
@@ -7776,7 +7833,10 @@ export function MainAIChatWindow({
                 greeting="你好，我是你的组织专属 AI 助手。可以用快捷入口打开组织管理，或直接描述组织相关事项。"
               />
               {organizationMessages0425.length === 0 ? (
-                <div className="flex flex-wrap gap-[var(--space-200)] w-full md:ml-[44px]">
+                <div
+                  data-chat-slot-exclusion="true"
+                  className="flex flex-wrap gap-[var(--space-200)] w-full md:ml-[44px]"
+                >
                   <ChatPromptButton type="button" onClick={() => appendOrganizationManagement0425Card("organization")}>
                     组织管理
                   </ChatPromptButton>
@@ -7793,7 +7853,10 @@ export function MainAIChatWindow({
                 greeting="你好，我是你的员工专属 AI 助手。可用底部快捷入口发起权限申请，或直接描述员工相关事项。"
               />
               {employeeMessages0425.length === 0 ? (
-                <div className="flex flex-wrap gap-[var(--space-200)] w-full md:ml-[44px]">
+                <div
+                  data-chat-slot-exclusion="true"
+                  className="flex flex-wrap gap-[var(--space-200)] w-full md:ml-[44px]"
+                >
                   <ChatPromptButton type="button" onClick={() => appendEmployeePermissionGuide0425Card("employee")}>
                     员工权限申请
                   </ChatPromptButton>
@@ -8735,7 +8798,10 @@ export function MainAIChatWindow({
                           }
                         />
                         {is0419Explore && messages.length === 0 ? (
-                          <div className="flex flex-wrap gap-[var(--space-200)] w-full md:ml-[44px]">
+                          <div
+                            data-chat-slot-exclusion="true"
+                            className="flex flex-wrap gap-[var(--space-200)] w-full md:ml-[44px]"
+                          >
                             <ChatPromptButton
                               onClick={() => {
                                 setInputValue("查看我的个人信息");
@@ -8762,7 +8828,10 @@ export function MainAIChatWindow({
                             </ChatPromptButton>
                           </div>
                         ) : !is0419Explore && appId === "education" && educationMessages.length === 0 ? (
-                          <div className="flex flex-wrap gap-[var(--space-200)] w-full md:ml-[44px]">
+                          <div
+                            data-chat-slot-exclusion="true"
+                            className="flex flex-wrap gap-[var(--space-200)] w-full md:ml-[44px]"
+                          >
                             {renderEducationWelcomeActionChips()}
                           </div>
                         ) : null}

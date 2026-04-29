@@ -494,7 +494,7 @@ export function MainAI(props: {
             />
           ) : null}
         </div>
-        <div className="flex shrink-0 items-center">
+        <div className="flex shrink-0 items-center gap-[var(--space-300)]">
           {invite0421DemoApprovalNavVisible && on0421EstablishOrganization ? (
             <button
               type="button"

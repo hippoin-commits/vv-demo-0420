@@ -1,0 +1,13 @@
+---
+description: Keep demo-only behavior out of developer-facing interaction logic
+alwaysApply: true
+---
+
+# Demo Behavior vs Production Rules
+
+- When the user says a behavior is only for demo convenience, implement it if requested, but do not document it in developer-facing interaction logic or development instructions.
+- Right-side logic and development instruction panels must describe production behavior that should ship online.
+- Hide demo-only behavior such as auto-sending prompts, scripted reply text, forced scroll positions, seeded data, or presentation shortcuts from those developer-facing docs.
+- For the "go to bottom" demo specifically, auto-sending a user bubble, returning a scripted system bubble, and automatically scrolling to the top are demo-only behaviors. The production rule is only: when the user scrolls upward beyond the threshold, show the go-to-bottom button; clicking it returns the current conversation to the bottom.
+- For the "new conversation positioning" demo specifically, auto-filling demo text into the input is demo-only behavior. The production rule is: whenever a new conversation round starts, whether the first message is from the user or the system, immediately create the reading slot and align the round to that slot.
+- If a requested behavior may be either production logic or demo-only presentation logic, ask before documenting it as a formal rule.
