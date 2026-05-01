@@ -13,5 +13,9 @@ export type DemoInstructionCommand =
   | { kind: "openImFrameworkDemo" }
   /** 交互演示指令集：自动发送去底部按钮演示句，并滚到对话流顶部以展示按钮 */
   | { kind: "showScrollToBottomThresholdDemo" }
+  /** 交互演示指令集：注入顶部下拉加载历史记录演示数据（演示） */
+  | { kind: "showPullHistoryLoadDemo" }
   /** 交互演示指令集：只切回主 AI 并预填指令，不直接生成对话内容 */
   | { kind: "prefillMainAiDemoPrompt"; prompt: string }
+  /** 交互规范：进入会议室 AI 并注入会议室管理/预约演示卡片 */
+  | { kind: "openMeetingRoomCardStateDemo" }

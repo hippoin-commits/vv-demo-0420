@@ -87,7 +87,7 @@ export function GenericCard({
       <div className="relative flex w-full min-w-0 shrink-0 items-start gap-[var(--space-200)]">
         <div className="bg-primary h-[22px] w-[3px] shrink-0 self-start rounded-full" aria-hidden />
         <div className="flex min-w-0 flex-1 flex-col gap-[var(--space-100)]">
-          <h3 className="m-0 flex min-w-0 max-w-full flex-wrap items-baseline gap-x-[var(--space-100)] gap-y-0 text-[length:var(--font-size-md)] font-[var(--font-weight-medium)] leading-[22px] text-text">
+          <h3 className="m-0 flex min-w-0 max-w-full flex-wrap items-baseline gap-x-[var(--space-400)] gap-y-0 text-[length:var(--font-size-md)] font-[var(--font-weight-medium)] leading-[22px] text-text">
             <span className="min-w-0 truncate">{title}</span>
             {titleSuffix ? (
               <span className="shrink-0 truncate text-[length:var(--font-size-sm)] font-[var(--font-weight-normal)] text-text-secondary">

@@ -106,6 +106,8 @@ export function MainAI(props: {
   permissionEditCard0424Demo?: boolean;
   /** 0425-案例-组织管理+权限申请 */
   organizationManagement0425Demo?: boolean;
+  /** 交互规范：会议室 AI 卡片状态切换演示 */
+  meetingRoomCardStateDemo?: boolean;
 } = {}) {
   const {
     initialActiveApp = null,
@@ -127,6 +129,7 @@ export function MainAI(props: {
     demoInstructionSetShell = false,
     permissionEditCard0424Demo = false,
     organizationManagement0425Demo = false,
+    meetingRoomCardStateDemo = false,
   } = props;
 
   const invite0421ShellDockActive = invite0421NewUserFlow || invite0421EduStudentFlow;
@@ -186,10 +189,14 @@ export function MainAI(props: {
     React.useState(0)
   const [interactionRulesScrollToBottomDemoNonce, setInteractionRulesScrollToBottomDemoNonce] =
     React.useState(0)
+  const [interactionRulesPullHistoryDemoNonce, setInteractionRulesPullHistoryDemoNonce] =
+    React.useState(0)
   const [interactionRulesMainAiDemoPrefill, setInteractionRulesMainAiDemoPrefill] =
     React.useState({ nonce: 0, prompt: "" })
   const [interactionRulesImFrameworkDemoActive, setInteractionRulesImFrameworkDemoActive] =
     React.useState(false)
+  const [interactionRulesMeetingRoomCardStateDemoNonce, setInteractionRulesMeetingRoomCardStateDemoNonce] =
+    React.useState(0)
 
   const clearInvite0421ShellGateRequest = React.useCallback(() => {
     setInvite0421ShellGateRequest(null)
@@ -336,6 +343,12 @@ export function MainAI(props: {
           setShortcutId(null)
           setInteractionRulesScrollToBottomDemoNonce((n) => n + 1)
           break
+        case "showPullHistoryLoadDemo":
+          setInteractionRulesImFrameworkDemoActive(false)
+          setPrimaryNavId("ai")
+          setShortcutId(null)
+          setInteractionRulesPullHistoryDemoNonce((n) => n + 1)
+          break
         case "prefillMainAiDemoPrompt":
           setInteractionRulesImFrameworkDemoActive(false)
           setPrimaryNavId("ai")
@@ -344,6 +357,12 @@ export function MainAI(props: {
             nonce: prev.nonce + 1,
             prompt: cmd.prompt,
           }))
+          break
+        case "openMeetingRoomCardStateDemo":
+          setInteractionRulesImFrameworkDemoActive(false)
+          setPrimaryNavId("ai")
+          setShortcutId(null)
+          setInteractionRulesMeetingRoomCardStateDemoNonce((n) => n + 1)
           break
       }
     },
@@ -411,6 +430,9 @@ export function MainAI(props: {
           interactionRulesScrollToBottomDemoNonce={
             demoInstructionShell ? interactionRulesScrollToBottomDemoNonce : 0
           }
+          interactionRulesPullHistoryDemoNonce={
+            demoInstructionShell ? interactionRulesPullHistoryDemoNonce : 0
+          }
           interactionRulesMainAiDemoPrefillNonce={
             demoInstructionShell ? interactionRulesMainAiDemoPrefill.nonce : 0
           }
@@ -422,6 +444,10 @@ export function MainAI(props: {
           organizationManagement0425Demo={organizationManagement0425Demo}
           organizationManagement0425CommandNonce={organizationManagement0425CommandNonce}
           organizationManagement0425Scheme2CommandNonce={organizationManagement0425Scheme2CommandNonce}
+          meetingRoomCardStateDemo={meetingRoomCardStateDemo}
+          interactionRulesMeetingRoomCardStateDemoNonce={
+            demoInstructionShell ? interactionRulesMeetingRoomCardStateDemoNonce : 0
+          }
         />
       ) : primaryNavId === "message" &&
         demoInstructionShell &&

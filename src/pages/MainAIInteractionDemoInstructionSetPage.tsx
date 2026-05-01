@@ -17,6 +17,7 @@ export function MainAIInteractionDemoInstructionSetPage() {
       demoInstructionShell
       demoInstructionSetShell
       organizationManagement0425Demo
+      meetingRoomCardStateDemo
     />
   );
 }

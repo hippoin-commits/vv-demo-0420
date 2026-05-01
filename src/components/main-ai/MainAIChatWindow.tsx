@@ -183,6 +183,22 @@ import {
   ORGANIZATION_MANAGEMENT_0425_SCHEME2_INPUT_PROMPT,
   ORGANIZATION_MANAGEMENT_0425_USER_TRIGGER,
 } from "../../constants/organizationManagement0425"
+import {
+  MEETING_ROOM_AI_DEMO_CREATE_INLINE_MARKER,
+  MEETING_ROOM_AI_DEMO_MAIN_MARKER,
+  MEETING_ROOM_AI_DEMO_USER_TRIGGER,
+  MEETING_ROOM_AI_DEMO_VIEW_LIST_MARKER,
+} from "../../constants/meetingRoomAiDemo"
+import { resetMeetingRoomDemoStore } from "./meeting-room-ai-demo/meetingRoomDemoStore"
+import { MeetingRoomAiDemoMainCard } from "./meeting-room-ai-demo/MeetingRoomAiDemoMainCard"
+import {
+  MeetingRoomCreateOneFCard,
+  MeetingRoomViewListOneFCard,
+} from "./meeting-room-ai-demo/MeetingRoomOneFDockCards"
+import {
+  MeetingRoomCuiDrawer,
+  type MeetingRoomDrawerScene,
+} from "./meeting-room-ai-demo/MeetingRoomCuiDrawer"
 import { OrganizationManagementCard0425 } from "./organization-management-0425/OrganizationManagementCard0425"
 import { OrganizationPermissionApplySection0425 } from "./organization-management-0425/OrganizationPermissionApplySection0425"
 import {
@@ -208,7 +224,7 @@ import membersIcon from "../../assets/ecb04190c46a6ecd790d2bc345d963ba9a4a8f0b.p
 import financeIcon from "../../assets/98e154a19d1590d43b04308d53726a30a29e972b.png";
 import orgIcon from "../../assets/58a97c06b4ae6edfc613d20add2fb4ead0363c64.png";
 
-import { Calculator, BookA, PenTool, Users, ArrowLeft, MoreHorizontal, Briefcase, ShoppingBag, DollarSign, GripHorizontal, ChevronDown, Boxes, Package, Upload, BadgeDollarSign, Clock, CalendarCheck, BarChart3, UserCog, Receipt, History, PieChart, BookOpen, ShoppingCart, GraduationCap, UserCheck, TrendingUp, TrendingDown, Landmark, FileSpreadsheet, PanelLeft, Square, X, AppWindow, Maximize2, ListTodo, List, UsersRound, UserPlus, Filter, Settings, Bell, Inbox, Send, User, PenLine, Building2, Search, Info, FileText, LayoutGrid } from "lucide-react"
+import { Calculator, BookA, PenTool, Users, ArrowLeft, MoreHorizontal, Briefcase, ShoppingBag, DollarSign, GripHorizontal, ChevronDown, Boxes, Package, Upload, BadgeDollarSign, Clock, CalendarCheck, BarChart3, UserCog, Receipt, History, PieChart, BookOpen, ShoppingCart, GraduationCap, UserCheck, TrendingUp, TrendingDown, Landmark, FileSpreadsheet, PanelLeft, Square, X, AppWindow, Maximize2, ListTodo, List, UsersRound, UserPlus, Filter, Settings, Bell, Inbox, Send, User, PenLine, Building2, Search, Info, FileText, LayoutGrid, Loader2, DoorOpen } from "lucide-react"
 import { toast } from "sonner"
 import { motion, AnimatePresence, useDragControls } from "motion/react"
 import { usePopper } from "react-popper"
@@ -608,6 +624,8 @@ interface MainAIChatWindowProps {
   interactionRulesMainAiOrgDemoNonce?: number
   /** 交互演示指令集：递增时自动发送去底部按钮演示句，并滚到对话流顶部 */
   interactionRulesScrollToBottomDemoNonce?: number
+  /** 交互演示指令集：递增时注入顶部下拉加载历史记录演示数据 */
+  interactionRulesPullHistoryDemoNonce?: number
   /** 交互演示指令集：递增时只切回主 AI 并预填输入框，不直接注入消息 */
   interactionRulesMainAiDemoPrefillNonce?: number
   interactionRulesMainAiDemoPrefillPrompt?: string
@@ -621,6 +639,10 @@ interface MainAIChatWindowProps {
   organizationManagement0425CommandNonce?: number
   /** 0425 页面右上角指令集：递增时将组织管理方案2指令填入当前输入框 */
   organizationManagement0425Scheme2CommandNonce?: number
+  /** 交互规范：会议室 AI 卡片状态切换全链路演示（切会议应用 + 列表/详情/规则/预约） */
+  meetingRoomCardStateDemo?: boolean
+  /** 交互规范文档：递增时进入会议室 AI 并注入演示消息 */
+  interactionRulesMeetingRoomCardStateDemoNonce?: number
 }
 
 function taskEntryIsMailDockFamily(
@@ -681,6 +703,45 @@ const SIMPLE_JOIN_ORG_0421_MARKER = "<<<SIMPLE_JOIN_ORG_0421>>>"
 const INVITE0421_ORG_EMPLOYEE_ONBOARD_MARKER = "<<<INVITE0421_ORG_EMPLOYEE_ONBOARD>>>"
 /** 0421 受邀加入教育空间（学生）：与 IM 抽屉一致的多步邀请流 */
 const INVITE0421_EDU_STUDENT_INVITE_FLOW_MARKER = "<<<INVITE0421_EDU_STUDENT_INVITE_FLOW>>>"
+
+const HISTORY_PULL_THRESHOLD_PX = 100;
+type HistoryPullStatus = "idle" | "pulling" | "ready" | "loading" | "noMore";
+
+function HistoryPullLoadIndicator({
+  status,
+  exposedHeight,
+}: {
+  status: HistoryPullStatus;
+  exposedHeight: number;
+}) {
+  const visibleHeight = status === "idle" ? 0 : Math.max(0, Math.min(HISTORY_PULL_THRESHOLD_PX, exposedHeight));
+  if (visibleHeight <= 0) return null;
+  const label =
+    status === "loading"
+      ? "正在加载历史记录"
+      : status === "noMore"
+        ? "没有更多记录"
+        : status === "ready"
+          ? "松开加载历史记录"
+          : "下拉加载历史记录";
+
+  return (
+    <div
+      className="w-full shrink-0 overflow-hidden transition-[height] duration-200 ease-out"
+      style={{ height: visibleHeight }}
+      aria-live="polite"
+    >
+      <div className="flex h-[100px] w-full items-center justify-center">
+        <div className="flex items-center gap-[var(--space-150)] rounded-full border border-border bg-bg/90 px-[var(--space-300)] py-[var(--space-150)] text-[length:var(--font-size-xs)] font-[var(--font-weight-medium)] leading-none text-text-secondary shadow-sm backdrop-blur-sm">
+          {status === "loading" ? (
+            <Loader2 className="size-[14px] animate-spin text-text-secondary" strokeWidth={2.2} aria-hidden />
+          ) : null}
+          <span>{label}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /** 0421 演示：依赖企业/组织后才可进入的一级工作台应用（与 invite0421Workbench 常量同源） */
 const WORKBENCH_APP_IDS_REQUIRING_ORG_0421 = INVITE0421_WORKBENCH_APP_IDS
@@ -843,7 +904,10 @@ function messageContentIsInChatSurfaceCard(content: string): boolean {
     content.startsWith(MAIL_MAIL_ADMIN_PANEL_MARKER) ||
     content === PERMISSION_EDIT_CARD_0424_MARKER ||
     content.startsWith(PERMISSION_DETAIL_CARD_0424_MARKER_PREFIX) ||
-    content.startsWith(ORGANIZATION_MANAGEMENT_0425_MARKER)
+    content.startsWith(ORGANIZATION_MANAGEMENT_0425_MARKER) ||
+    content === MEETING_ROOM_AI_DEMO_MAIN_MARKER ||
+    content === MEETING_ROOM_AI_DEMO_VIEW_LIST_MARKER ||
+    content === MEETING_ROOM_AI_DEMO_CREATE_INLINE_MARKER
   );
 }
 
@@ -1549,12 +1613,29 @@ const EMPLOYEE_0425_APPS: SecondaryAppButtonApp[] = [
   },
 ];
 
+/** 交互演示：会议室卡片状态 — 底栏「会议室管理」二级入口（应用 AI：一级单色线标 + 二级无图标，同邮箱） */
+const MEETING_ROOM_CARD_STATE_DOCK_APP: SecondaryAppButtonApp = {
+  id: "meeting_room_mgmt",
+  name: "会议室管理",
+  imageSrc: meetingIcon,
+  iconNode: <DoorOpen className="size-[13px]" strokeWidth={1.8} />,
+  subEntryTint: "neutral",
+  menu: [
+    { id: "mr_view", name: "查看会议室" },
+    { id: "mr_create", name: "新建会议室" },
+  ],
+};
+
 function SecondaryAppButton({
   app,
   onMenuClick,
+  iconPresentation = "tinted",
+  hideMenuIcons = false,
 }: {
   app: SecondaryAppButtonApp;
   onMenuClick: (menu: string, appName: string, appId: string, menuItemId?: string) => void;
+  iconPresentation?: "tinted" | "plain";
+  hideMenuIcons?: boolean;
 }) {
   const [referenceElement, setReferenceElement] = React.useState<HTMLButtonElement | null>(null);
   const [popperElement, setPopperElement] = React.useState<HTMLDivElement | null>(null);
@@ -1669,13 +1750,17 @@ function SecondaryAppButton({
           <span
             className={cn(
               "flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[var(--radius-sm)] transition-colors",
-              app.subEntryTint === "orange" && "bg-[var(--orange-alpha-11)] text-[var(--orange-10)]",
-              app.subEntryTint === "mailOrange" && "bg-[var(--orange-alpha-11)] text-[var(--orange-3)]",
-              app.subEntryTint === "blue" && "bg-[var(--blue-alpha-11)] text-primary",
-              app.subEntryTint === "green" && "bg-[var(--green-alpha-11)] text-success",
-              app.subEntryTint === "brand" && "bg-primary/10 text-primary",
-              (!app.subEntryTint || app.subEntryTint === "neutral") &&
-                "bg-bg-secondary text-text-secondary group-hover/btn:bg-[var(--black-alpha-11)] group-hover/btn:text-text",
+              iconPresentation === "plain"
+                ? "text-text-secondary group-hover/btn:text-text"
+                : [
+                    app.subEntryTint === "orange" && "bg-[var(--orange-alpha-11)] text-[var(--orange-10)]",
+                    app.subEntryTint === "mailOrange" && "bg-[var(--orange-alpha-11)] text-[var(--orange-3)]",
+                    app.subEntryTint === "blue" && "bg-[var(--blue-alpha-11)] text-primary",
+                    app.subEntryTint === "green" && "bg-[var(--green-alpha-11)] text-success",
+                    app.subEntryTint === "brand" && "bg-primary/10 text-primary",
+                    (!app.subEntryTint || app.subEntryTint === "neutral") &&
+                      "bg-bg-secondary text-text-secondary group-hover/btn:bg-[var(--black-alpha-11)] group-hover/btn:text-text",
+                  ],
             )}
           >
             {app.iconNode}
@@ -1716,7 +1801,7 @@ function SecondaryAppButton({
               >
                 {app.menu.map((m: any) => {
                   const name = typeof m === 'string' ? m : m.name;
-                  const hasIcon = typeof m === 'object' && m.iconKey;
+                  const hasIcon = !hideMenuIcons && typeof m === 'object' && m.iconKey;
                   const menuItemId = typeof m === 'object' && m.id ? String(m.id) : undefined;
                   
                   return (
@@ -1978,6 +2063,7 @@ export function MainAIChatWindow({
   interactionRulesBusinessCardDemoNonce = 0,
   interactionRulesMainAiOrgDemoNonce = 0,
   interactionRulesScrollToBottomDemoNonce = 0,
+  interactionRulesPullHistoryDemoNonce = 0,
   interactionRulesMainAiDemoPrefillNonce = 0,
   interactionRulesMainAiDemoPrefillPrompt = "",
   demoInstructionShell = false,
@@ -1985,6 +2071,8 @@ export function MainAIChatWindow({
   organizationManagement0425Demo = false,
   organizationManagement0425CommandNonce = 0,
   organizationManagement0425Scheme2CommandNonce = 0,
+  meetingRoomCardStateDemo = false,
+  interactionRulesMeetingRoomCardStateDemoNonce = 0,
 }: MainAIChatWindowProps) {
   const invite0421DockFlow = invite0421NewUserFlow || invite0421EduStudentFlow;
   /** 避免 `tryEnterWorkbenchApp` 随 `activeApp` 变引用后，effect 误重复打开教育应用（如底栏「返回」后主 AI 立刻被拉回教育） */
@@ -2015,6 +2103,17 @@ export function MainAIChatWindow({
   const [interactionRulesOrgCardResetKey, setInteractionRulesOrgCardResetKey] = React.useState(0)
   const lastInteractionRulesOrgSwitcherDemoNonceRef = React.useRef(0)
   const lastInteractionRulesScrollToBottomDemoNonceRef = React.useRef(0)
+  const lastInteractionRulesPullHistoryDemoNonceRef = React.useRef(0)
+  const [historyPullDemoActive, setHistoryPullDemoActive] = React.useState(false)
+  const [historyPullStatus, setHistoryPullStatus] = React.useState<HistoryPullStatus>("idle")
+  const [historyPullExposedHeight, setHistoryPullExposedHeight] = React.useState(0)
+  const pendingHistoryMessagesRef = React.useRef<Message[]>([])
+  const historyPullStatusRef = React.useRef<HistoryPullStatus>("idle")
+  const historyPullStartYRef = React.useRef<number | null>(null)
+  const historyPullDraggingRef = React.useRef(false)
+  const historyPullWheelDistanceRef = React.useRef(0)
+  const historyPullWheelReleaseTimeoutRef = React.useRef<number | null>(null)
+  const historyPullLoadTimeoutRef = React.useRef<number | null>(null)
   const scrollRef = React.useRef<HTMLDivElement>(null)
   /** 当前列表最后一条消息的外层容器，用于新卡片打开时滚至卡片顶部对齐视口 */
   const latestMessageRowRef = React.useRef<HTMLDivElement>(null)
@@ -2527,7 +2626,7 @@ export function MainAIChatWindow({
         invite0421DockFlow &&
           !(hasOrganization || workbenchOrgGateReleased) &&
           (activeApp === "todo" ||
-            activeApp === "meeting" ||
+            (activeApp === "meeting" && !meetingRoomCardStateDemo) ||
             activeApp === "disk" ||
             activeApp === "docs" ||
             (activeApp === "schedule" && !schedule0422DrawerDemo)),
@@ -2538,6 +2637,7 @@ export function MainAIChatWindow({
       workbenchOrgGateReleased,
       activeApp,
       schedule0422DrawerDemo,
+      meetingRoomCardStateDemo,
     ],
   );
 
@@ -2652,6 +2752,12 @@ export function MainAIChatWindow({
   /** 0425：主 AI、组织 AI、员工 AI 互相独立；组织/员工应用不复用主会话 `messages` */
   const [organizationMessages0425, setOrganizationMessages0425] = React.useState<Message[]>([]);
   const [employeeMessages0425, setEmployeeMessages0425] = React.useState<Message[]>([]);
+  const [meetingRoomCardStateMessages, setMeetingRoomCardStateMessages] = React.useState<Message[]>([]);
+  const [meetingRoomCuiDrawerOpen, setMeetingRoomCuiDrawerOpen] = React.useState(false);
+  const [meetingRoomDrawerScene, setMeetingRoomDrawerScene] = React.useState<MeetingRoomDrawerScene>({
+    type: "view_meetings",
+  });
+  const lastInteractionRulesMeetingRoomDemoNonceRef = React.useRef(0);
 
   /**
    * 邮箱应用：email0413 单桶 `all`；email0415 / email0417 按「全部 / 个人 / 租户」分桶并与侧栏 mail-scope-* 会话对齐。
@@ -2733,7 +2839,9 @@ export function MainAIChatWindow({
                 ? organizationMessages0425.length
                 : surface === "employee"
                   ? employeeMessages0425.length
-                  : messages.length;
+                  : surface === "meeting" && meetingRoomCardStateDemo
+                    ? meetingRoomCardStateMessages.length
+                    : messages.length;
       armNewRoundForUserSend(surface === "main" ? null : surface, prior);
     },
     [
@@ -2744,6 +2852,8 @@ export function MainAIChatWindow({
       mailMessages,
       organizationMessages0425,
       employeeMessages0425,
+      meetingRoomCardStateDemo,
+      meetingRoomCardStateMessages.length,
       armNewRoundForUserSend,
     ]
   );
@@ -2853,6 +2963,11 @@ export function MainAIChatWindow({
     () => (currentOrg === SCHEDULE_0422_ORG_ID_PERSONAL ? "personal" as const : "org" as const),
     [currentOrg],
   );
+
+  const meetingRoomDemoDefaultOrgLabel = React.useMemo(() => {
+    if (currentOrg === NO_ORG_MESSAGE_SCOPE) return "演示行政组织";
+    return schedule0422NavOrganizations.find((o) => o.id === currentOrg)?.name ?? "演示行政组织";
+  }, [currentOrg, schedule0422NavOrganizations]);
 
   React.useEffect(() => {
     if (!(invite0421NewUserFlow && hasOrganization)) return;
@@ -3349,6 +3464,7 @@ export function MainAIChatWindow({
     setInvite0421EmployeeAwaitingDemoApproval(false);
     setInteractionRulesOrgCardMessageId(null);
     setInteractionRulesOrgCardResetKey(0);
+    setMeetingRoomCardStateMessages([]);
   }, [conversation.id, invite0421DockFlow, is0419Explore]);
 
   /**
@@ -3383,7 +3499,9 @@ export function MainAIChatWindow({
               ? organizationMessages0425
               : activeApp === "employee" && organizationManagement0425Demo
                 ? employeeMessages0425
-                : messages;
+                : activeApp === "meeting" && meetingRoomCardStateDemo
+                  ? meetingRoomCardStateMessages
+                  : messages;
 
     if (newRoundSlot) {
       const slotMatches =
@@ -3423,14 +3541,14 @@ export function MainAIChatWindow({
     mailMessages,
     organizationMessages0425,
     employeeMessages0425,
+    meetingRoomCardStateMessages,
     organizationManagement0425Demo,
+    meetingRoomCardStateDemo,
     activeApp,
     is0419Explore,
     scrollToBottom,
     scrollLatestCardRowToTop,
     newRoundSlot,
-    activeApp,
-    is0419Explore,
   ]);
 
   /** 新一轮对话：本轮第一条消息进入槽位后，立即将槽顶对齐当前阅读槽位顶部。 */
@@ -3461,7 +3579,9 @@ export function MainAIChatWindow({
               ? organizationMessages0425.length
               : activeApp === "employee" && organizationManagement0425Demo
                 ? employeeMessages0425.length
-                : messages.length;
+                : activeApp === "meeting" && meetingRoomCardStateDemo
+                  ? meetingRoomCardStateMessages.length
+                  : messages.length;
     if (listLen <= newRoundSlot.startMessageIndex) return;
     if (newRoundScrollAppliedRef.current) return;
 
@@ -3506,7 +3626,9 @@ export function MainAIChatWindow({
     mailMessages,
     organizationMessages0425,
     employeeMessages0425,
+    meetingRoomCardStateMessages,
     organizationManagement0425Demo,
+    meetingRoomCardStateDemo,
     activeApp,
     is0419Explore,
   ]);
@@ -3688,6 +3810,54 @@ export function MainAIChatWindow({
   ]);
 
   React.useEffect(() => {
+    if (!demoInstructionShell || !meetingRoomCardStateDemo) return;
+    if (!interactionRulesMeetingRoomCardStateDemoNonce) return;
+    if (
+      interactionRulesMeetingRoomCardStateDemoNonce <=
+      lastInteractionRulesMeetingRoomDemoNonceRef.current
+    ) {
+      return;
+    }
+    lastInteractionRulesMeetingRoomDemoNonceRef.current =
+      interactionRulesMeetingRoomCardStateDemoNonce;
+    resetMeetingRoomDemoStore();
+    setMeetingRoomCardStateMessages([]);
+    void tryEnterWorkbenchApp("meeting");
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        beginNewUserChatRound("meeting");
+        const now = Date.now();
+        const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        setMeetingRoomCardStateMessages([
+          {
+            id: `meeting-room-demo-user-${now}`,
+            senderId: currentUser.id,
+            content: MEETING_ROOM_AI_DEMO_USER_TRIGGER,
+            timestamp: ts,
+            createdAt: now,
+          },
+          {
+            id: `meeting-room-demo-main-${now}`,
+            senderId: conversation.user.id,
+            content: MEETING_ROOM_AI_DEMO_MAIN_MARKER,
+            timestamp: ts,
+            createdAt: now + 1,
+            isAfterPrompt: true,
+          },
+        ]);
+      });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [
+    demoInstructionShell,
+    meetingRoomCardStateDemo,
+    interactionRulesMeetingRoomCardStateDemoNonce,
+    tryEnterWorkbenchApp,
+    beginNewUserChatRound,
+    conversation.user.id,
+  ]);
+
+  React.useEffect(() => {
     if (!demoInstructionShell) return;
     if (!interactionRulesScrollToBottomDemoNonce) return;
     if (
@@ -3705,7 +3875,43 @@ export function MainAIChatWindow({
 
     const now = Date.now();
     const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const longCardPayload = JSON.stringify({
+      title: "对话内容示例卡片",
+      description: "这是一张用于撑开对话流高度的现成通用卡片，帮助直接观察“去底部”按钮的出现条件。",
+      detail:
+        "演示内容概览\n" +
+        "1. 当前对话中已有一段较长内容，用户向上滚动时可以明显离开底部。\n" +
+        "2. 当离底部距离超过同源槽位阈值时，底部居中的“去底部”按钮应出现。\n" +
+        "3. 点击按钮后，对话流会在 300ms 内平滑回到底部。\n\n" +
+        "业务信息摘要\n" +
+        "- 任务名称：Q2 产品路线图评审\n" +
+        "- 负责人：林舟\n" +
+        "- 参与人：产品、设计、研发、运营\n" +
+        "- 当前状态：待评审\n" +
+        "- 截止时间：本周五 18:00\n\n" +
+        "评审关注点\n" +
+        "1. 目标用户与核心场景是否清晰。\n" +
+        "2. 本季度优先级是否与业务目标一致。\n" +
+        "3. 关键体验链路是否具备可落地的交互细节。\n" +
+        "4. 跨端、跨组织、跨应用上下文切换是否有统一规则。\n" +
+        "5. 风险项是否已经拆分为可跟进的行动。\n\n" +
+        "行动建议\n" +
+        "- 会前补齐评审材料，并确认所有干系人已经阅读。\n" +
+        "- 会中优先讨论阻塞决策的问题，避免陷入低优先级细节。\n" +
+        "- 会后将结论同步到任务卡片，并给每个行动项指定负责人和截止时间。\n" +
+        "- 对需要后续验证的设计方案，补充可观测指标与验收标准。\n\n" +
+        "补充说明\n" +
+        "这张卡片只用于演示场景中的对话流高度，不代表“去底部”按钮在线上应用必须依赖某张卡片出现。正式逻辑仍然只和当前对话容器的滚动距离、同源槽位阈值、点击回到底部行为有关。",
+    });
     const demoMessages: Message[] = [
+      {
+        id: `scroll-threshold-card-${now}`,
+        senderId: conversation.user.id,
+        content: `<<<RENDER_GENERIC_CARD>>>:${longCardPayload}`,
+        timestamp: ts,
+        createdAt: now - 1,
+        isAfterPrompt: true,
+      },
       {
         id: `scroll-threshold-user-${now}`,
         senderId: currentUser.id,
@@ -3750,6 +3956,313 @@ export function MainAIChatWindow({
     interactionRulesScrollToBottomDemoNonce,
     conversation.user.id,
   ]);
+
+  React.useEffect(() => {
+    historyPullStatusRef.current = historyPullStatus;
+  }, [historyPullStatus]);
+
+  React.useEffect(() => {
+    if (!demoInstructionShell) return;
+    if (!interactionRulesPullHistoryDemoNonce) return;
+    if (
+      interactionRulesPullHistoryDemoNonce <=
+      lastInteractionRulesPullHistoryDemoNonceRef.current
+    ) {
+      return;
+    }
+    lastInteractionRulesPullHistoryDemoNonceRef.current = interactionRulesPullHistoryDemoNonce;
+
+    setActiveApp(null);
+    setSchedule0422DrawerOpen(false);
+    setSecondaryHistoryOpen(false);
+    skipNextChatLayoutScrollRef.current = true;
+    setNewRoundSlot(null);
+    sameRoundScrollSuppressRef.current = null;
+    historyPullStatusRef.current = "idle";
+    setHistoryPullDemoActive(true);
+    setHistoryPullStatus("idle");
+    setHistoryPullExposedHeight(0);
+
+    const now = Date.now();
+    const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const welcomeCardPayload = JSON.stringify({
+      title: "欢迎使用 V V AI",
+      description:
+        "V V AI 你说我做！加入教育空间，可与学校 / 教育机构互联互通，也可管理学习计划。",
+      detail:
+        "您已收到来自「小测教育科技教育空间」的邀请，请点击下方按钮处理，或告诉我您的需求，我会协助您高效完成任务。\n\n" +
+        "可用操作\n" +
+        "- V V AI 介绍视频\n" +
+        "- 处理来自小测教育的邀请",
+    });
+    const currentCardPayload = JSON.stringify({
+      title: "项目进展摘要",
+      description: "当前对话中的业务卡片，用于演示顶部继续下拉时加载更早历史。",
+      detail:
+        "今日进展\n" +
+        "1. 已完成主 AI 对话槽位默认 80% 的定位校准。\n" +
+        "2. 邮箱应用内快捷入口已接入统一的新一轮定位。\n" +
+        "3. 去底部按钮已支持超过阈值显示与 300ms 平滑返回底部。\n\n" +
+        "待确认事项\n" +
+        "- 抽屉、浮窗与应用 AI 需要保持独立滚动容器。\n" +
+        "- 历史加载完成后，当前视口锚点不能跳动。",
+    });
+    const historyCardPayload = JSON.stringify({
+      title: "更早的历史记录",
+      description: "这是从顶部加载出来的历史卡片，用于验证插入后当前阅读位置保持稳定。",
+      detail:
+        "历史摘要\n" +
+        "1. 产品讨论了多上下文对话的滚动容器隔离。\n" +
+        "2. 设计确认顶部加载提示区域固定为 100px。\n" +
+        "3. 加载成功后，提示区域消失，历史消息插入到当前列表顶部。",
+    });
+    const visibleMessages: Message[] = [
+      {
+        id: `pull-history-current-welcome-${now}`,
+        senderId: conversation.user.id,
+        content: `<<<RENDER_GENERIC_CARD>>>:${welcomeCardPayload}`,
+        timestamp: ts,
+        createdAt: now,
+        isAfterPrompt: true,
+      },
+      {
+        id: `pull-history-current-user-1-${now}`,
+        senderId: currentUser.id,
+        content: "演示：查看历史记录加载过程",
+        timestamp: ts,
+        createdAt: now + 1,
+      },
+      {
+        id: `pull-history-current-bot-1-${now}`,
+        senderId: conversation.user.id,
+        content: "当前对话已经展示到一个中间位置。滚动到顶部后继续下拉，可以看到历史记录加载提示。",
+        timestamp: ts,
+        createdAt: now + 2,
+        isAfterPrompt: true,
+      },
+      {
+        id: `pull-history-current-card-${now}`,
+        senderId: conversation.user.id,
+        content: `<<<RENDER_GENERIC_CARD>>>:${currentCardPayload}`,
+        timestamp: ts,
+        createdAt: now + 3,
+        isAfterPrompt: true,
+      },
+      {
+        id: `pull-history-current-user-2-${now}`,
+        senderId: currentUser.id,
+        content: "如果继续往上翻，还能看到更早的处理记录吗？",
+        timestamp: ts,
+        createdAt: now + 4,
+      },
+      {
+        id: `pull-history-current-bot-2-${now}`,
+        senderId: conversation.user.id,
+        content: "可以。到达顶部后向下拉，超过 100px 再松手，会加载更早的历史内容。",
+        timestamp: ts,
+        createdAt: now + 5,
+        isAfterPrompt: true,
+      },
+    ];
+    const olderMessages: Message[] = [
+      {
+        id: `pull-history-old-user-1-${now}`,
+        senderId: currentUser.id,
+        content: "之前关于顶部加载历史记录的规则是什么？",
+        timestamp: ts,
+        createdAt: now - 4,
+      },
+      {
+        id: `pull-history-old-bot-1-${now}`,
+        senderId: conversation.user.id,
+        content: "顶部提示区域固定为 100px，未达到阈值松手时不会加载，达到阈值后才进入加载状态。",
+        timestamp: ts,
+        createdAt: now - 3,
+        isAfterPrompt: true,
+      },
+      {
+        id: `pull-history-old-card-${now}`,
+        senderId: conversation.user.id,
+        content: `<<<RENDER_GENERIC_CARD>>>:${historyCardPayload}`,
+        timestamp: ts,
+        createdAt: now - 2,
+        isAfterPrompt: true,
+      },
+      {
+        id: `pull-history-old-bot-2-${now}`,
+        senderId: conversation.user.id,
+        content: "这些内容是加载成功后插入到顶部的历史消息，当前阅读位置应保持稳定。",
+        timestamp: ts,
+        createdAt: now - 1,
+        isAfterPrompt: true,
+      },
+    ];
+
+    setMessages(visibleMessages);
+    pendingHistoryMessagesRef.current = olderMessages;
+    const scrollTop = () => {
+      const c = chatContainerRef.current;
+      if (!c) return;
+      c.scrollTo({ top: 0, behavior: "auto" });
+    };
+    const raf = requestAnimationFrame(() => requestAnimationFrame(scrollTop));
+    return () => cancelAnimationFrame(raf);
+  }, [
+    demoInstructionShell,
+    interactionRulesPullHistoryDemoNonce,
+    conversation.user.id,
+  ]);
+
+  const finishHistoryLoad = React.useCallback(() => {
+    const c = chatContainerRef.current;
+    const pending = pendingHistoryMessagesRef.current;
+    const anchor = c?.querySelector("[data-message-id]") as HTMLElement | null;
+    const anchorId = anchor?.dataset.messageId ?? "";
+    const beforeAnchorTop = anchor?.getBoundingClientRect().top ?? null;
+
+    if (pending.length === 0) {
+      historyPullStatusRef.current = "noMore";
+      setHistoryPullStatus("noMore");
+      setHistoryPullExposedHeight(HISTORY_PULL_THRESHOLD_PX);
+      return;
+    }
+
+    pendingHistoryMessagesRef.current = [];
+    skipNextChatLayoutScrollRef.current = true;
+    flushSync(() => {
+      setMessages((prev) => [...pending, ...prev]);
+      historyPullStatusRef.current = "idle";
+      setHistoryPullStatus("idle");
+      setHistoryPullExposedHeight(0);
+    });
+
+    const keepAnchorStable = () => {
+      const next = chatContainerRef.current;
+      if (!next) return;
+      if (anchorId && beforeAnchorTop != null) {
+        const escaped =
+          typeof CSS !== "undefined" && typeof CSS.escape === "function"
+            ? CSS.escape(anchorId)
+            : anchorId.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+        const nextAnchor = next.querySelector(`[data-message-id="${escaped}"]`) as HTMLElement | null;
+        if (nextAnchor) {
+          const delta = nextAnchor.getBoundingClientRect().top - beforeAnchorTop;
+          next.scrollTop += delta;
+          return;
+        }
+      }
+      next.scrollTop = Math.max(0, next.scrollTop + HISTORY_PULL_THRESHOLD_PX);
+    };
+
+    keepAnchorStable();
+    requestAnimationFrame(keepAnchorStable);
+  }, []);
+
+  React.useEffect(() => {
+    const el = chatContainerRef.current;
+    if (!el) return;
+
+    const resetPull = () => {
+      historyPullDraggingRef.current = false;
+      historyPullStartYRef.current = null;
+      historyPullWheelDistanceRef.current = 0;
+      if (historyPullWheelReleaseTimeoutRef.current != null) {
+        window.clearTimeout(historyPullWheelReleaseTimeoutRef.current);
+        historyPullWheelReleaseTimeoutRef.current = null;
+      }
+      if (historyPullStatusRef.current === "pulling") {
+        historyPullStatusRef.current = "idle";
+        setHistoryPullStatus("idle");
+        setHistoryPullExposedHeight(0);
+        return;
+      }
+      if (historyPullStatusRef.current === "ready") {
+        historyPullStatusRef.current = "loading";
+        setHistoryPullStatus("loading");
+        setHistoryPullExposedHeight(HISTORY_PULL_THRESHOLD_PX);
+        historyPullLoadTimeoutRef.current = window.setTimeout(() => {
+          historyPullLoadTimeoutRef.current = null;
+          finishHistoryLoad();
+        }, 700);
+      }
+    };
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (event.button !== 0 || historyPullStatusRef.current === "loading" || historyPullStatusRef.current === "noMore")
+        return;
+      if (el.scrollTop > 0) return;
+      historyPullDraggingRef.current = true;
+      historyPullStartYRef.current = event.clientY;
+    };
+
+    const handlePointerMove = (event: PointerEvent) => {
+      if (!historyPullDraggingRef.current) return;
+      const startY = historyPullStartYRef.current;
+      if (startY == null) return;
+      const distance = Math.max(0, event.clientY - startY);
+      if (distance <= 0) return;
+      if (el.scrollTop > 0 && historyPullStatusRef.current === "idle") return;
+      event.preventDefault();
+      const exposed = Math.min(HISTORY_PULL_THRESHOLD_PX, distance);
+      const nextStatus: HistoryPullStatus = distance >= HISTORY_PULL_THRESHOLD_PX ? "ready" : "pulling";
+      historyPullStatusRef.current = nextStatus;
+      setHistoryPullExposedHeight(exposed);
+      setHistoryPullStatus(nextStatus);
+    };
+
+    const handleWheel = (event: WheelEvent) => {
+      const status = historyPullStatusRef.current;
+      if (status === "loading" || status === "noMore") return;
+      if (el.scrollTop > 0 && status === "idle") return;
+      if (event.deltaY < 0 && el.scrollTop <= 0) {
+        event.preventDefault();
+        historyPullWheelDistanceRef.current = Math.min(
+          HISTORY_PULL_THRESHOLD_PX,
+          historyPullWheelDistanceRef.current + Math.min(32, Math.abs(event.deltaY)),
+        );
+      } else if (status === "pulling" || status === "ready") {
+        event.preventDefault();
+        historyPullWheelDistanceRef.current = Math.max(
+          0,
+          historyPullWheelDistanceRef.current - Math.min(32, Math.abs(event.deltaY)),
+        );
+      } else {
+        return;
+      }
+
+      const nextDistance = historyPullWheelDistanceRef.current;
+      const nextStatus: HistoryPullStatus =
+        nextDistance >= HISTORY_PULL_THRESHOLD_PX ? "ready" : nextDistance > 0 ? "pulling" : "idle";
+      historyPullStatusRef.current = nextStatus;
+      setHistoryPullStatus(nextStatus);
+      setHistoryPullExposedHeight(nextDistance);
+      if (historyPullWheelReleaseTimeoutRef.current != null) {
+        window.clearTimeout(historyPullWheelReleaseTimeoutRef.current);
+      }
+      historyPullWheelReleaseTimeoutRef.current = window.setTimeout(resetPull, 180);
+    };
+
+    el.addEventListener("pointerdown", handlePointerDown);
+    el.addEventListener("pointermove", handlePointerMove, { passive: false });
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    window.addEventListener("pointerup", resetPull);
+    window.addEventListener("pointercancel", resetPull);
+    return () => {
+      if (historyPullWheelReleaseTimeoutRef.current != null) {
+        window.clearTimeout(historyPullWheelReleaseTimeoutRef.current);
+        historyPullWheelReleaseTimeoutRef.current = null;
+      }
+      if (historyPullLoadTimeoutRef.current != null) {
+        window.clearTimeout(historyPullLoadTimeoutRef.current);
+        historyPullLoadTimeoutRef.current = null;
+      }
+      el.removeEventListener("pointerdown", handlePointerDown);
+      el.removeEventListener("pointermove", handlePointerMove);
+      el.removeEventListener("wheel", handleWheel);
+      window.removeEventListener("pointerup", resetPull);
+      window.removeEventListener("pointercancel", resetPull);
+    };
+  }, [finishHistoryLoad, activeApp, is0419Explore]);
 
   const handleSendMessage = () => {
     if (!inputValue.trim()) return
@@ -3956,6 +4469,28 @@ export function MainAIChatWindow({
       beginNewUserChatRound("schedule");
       setMessages((prev) => [...prev, newUserMessage]);
       setInputValue("");
+      return;
+    }
+
+    if (activeApp === "meeting" && meetingRoomCardStateDemo) {
+      beginNewUserChatRound("meeting");
+      setMeetingRoomCardStateMessages((prev) => [...prev, newUserMessage]);
+      setInputValue("");
+      const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      const now = Date.now();
+      window.setTimeout(() => {
+        setMeetingRoomCardStateMessages((prev) => [
+          ...prev,
+          {
+            id: `meeting-room-demo-reply-${now}`,
+            senderId: conversation.user.id,
+            content: "已记录你的描述（演示占位）。请使用底部「会议室管理」或在列表行操作会议室。",
+            timestamp: ts,
+            createdAt: now,
+            isAfterPrompt: true,
+          },
+        ]);
+      }, 400);
       return;
     }
 
@@ -4380,6 +4915,9 @@ export function MainAIChatWindow({
     } else if (activeApp === "employee" && organizationManagement0425Demo) {
       beginNewUserChatRound("employee");
       setEmployeeMessages0425((prev) => [...prev, orgSwitcherMsg]);
+    } else if (activeApp === "meeting" && meetingRoomCardStateDemo) {
+      beginNewUserChatRound("meeting");
+      setMeetingRoomCardStateMessages((prev) => [...prev, orgSwitcherMsg]);
     } else {
       beginNewUserChatRound("main");
       setMessages((prev) => [...prev, orgSwitcherMsg]);
@@ -4831,6 +5369,11 @@ export function MainAIChatWindow({
       setInteractionRulesOrgCardMessageId(null);
       setInteractionRulesOrgCardResetKey(0);
     }
+    setHistoryPullDemoActive(false);
+    pendingHistoryMessagesRef.current = [];
+    historyPullStatusRef.current = "idle";
+    setHistoryPullStatus("idle");
+    setHistoryPullExposedHeight(0);
     setMessages([]);
     setNewRoundSlot(null);
     newRoundScrollAppliedRef.current = false;
@@ -4947,12 +5490,14 @@ export function MainAIChatWindow({
               ? organizationMessages0425.length
               : activeApp === "employee" && organizationManagement0425Demo
                 ? employeeMessages0425.length
-                : messages.length;
+                : activeApp === "meeting" && meetingRoomCardStateDemo
+                  ? meetingRoomCardStateMessages.length
+                  : messages.length;
     const slotKey =
       newRoundSlot == null
         ? "0"
         : `${newRoundSlot.startMessageIndex}-${newRoundSlot.slotHeightPx}-${newRoundSlot.armedActiveApp ?? ""}`;
-    return `${is0419Explore ? 1 : 0}|${activeApp ?? ""}|${len}|${slotKey}`;
+    return `${is0419Explore ? 1 : 0}|${activeApp ?? ""}|${len}|${slotKey}|${historyPullStatus}:${historyPullExposedHeight}`;
   }, [
     activeApp,
     is0419Explore,
@@ -4962,8 +5507,12 @@ export function MainAIChatWindow({
     mailMessages.length,
     organizationMessages0425.length,
     employeeMessages0425.length,
+    meetingRoomCardStateMessages.length,
     organizationManagement0425Demo,
+    meetingRoomCardStateDemo,
     newRoundSlot,
+    historyPullStatus,
+    historyPullExposedHeight,
   ]);
 
   /** 与 `newRoundSlot.slotHeightPx` 同源，供「去底部」距离阈值随槽位策略同步 */
@@ -4996,7 +5545,15 @@ export function MainAIChatWindow({
 
   const renderMessageList = (
     messagesList: Message[],
-    appContext: "main" | "education" | "task" | "mail" | "schedule" | "organization" | "employee",
+    appContext:
+      | "main"
+      | "education"
+      | "task"
+      | "mail"
+      | "schedule"
+      | "organization"
+      | "employee"
+      | "meeting",
     /** null：不在此列表挂锚点（如独立浮窗内列表，避免与主会话 ref 冲突） */
     listAnchorRef: React.MutableRefObject<HTMLDivElement | null> | null | undefined = undefined,
     slotWrapConfig: {
@@ -5048,6 +5605,7 @@ export function MainAIChatWindow({
           onMailWelcomeAction={appendMailWelcomeAction}
           lastMessageRowRef={rowAnchorRef ?? undefined}
           scrollToMessageById={scrollToMessageById}
+          newRoundSlotWrapConfig={slotWrapConfig}
           mailReadInChat={taskEntryVariant === "email0417"}
           mailAdminOrganizations={
             taskEntryIsEmail0415ScopeFamily(taskEntryVariant)
@@ -5068,6 +5626,7 @@ export function MainAIChatWindow({
       else if (appContext === "task") setTaskMessages(fn);
       else if (appContext === "organization") setOrganizationMessages0425(fn);
       else if (appContext === "employee") setEmployeeMessages0425(fn);
+      else if (appContext === "meeting") setMeetingRoomCardStateMessages(fn);
       else setMessages(fn);
     };
 
@@ -5090,7 +5649,9 @@ export function MainAIChatWindow({
                   ? "organization"
                   : appContext === "employee"
                     ? "employee"
-                    : "schedule";
+                    : appContext === "meeting"
+                      ? "meeting"
+                      : "schedule";
       beginNewUserChatRound(roundSurface);
       patchMessages(fn);
     };
@@ -5148,6 +5709,18 @@ export function MainAIChatWindow({
         msg.content.startsWith(PERMISSION_DETAIL_CARD_0424_MARKER_PREFIX);
       const isOrganizationManagement0425Card =
         organizationManagement0425Demo && msg.content.startsWith(ORGANIZATION_MANAGEMENT_0425_MARKER);
+      const isMeetingRoomAiDemoMainCard =
+        meetingRoomCardStateDemo &&
+        appContext === "meeting" &&
+        msg.content === MEETING_ROOM_AI_DEMO_MAIN_MARKER;
+      const isMeetingRoomOneFViewListCard =
+        meetingRoomCardStateDemo &&
+        appContext === "meeting" &&
+        msg.content === MEETING_ROOM_AI_DEMO_VIEW_LIST_MARKER;
+      const isMeetingRoomOneFCreateCard =
+        meetingRoomCardStateDemo &&
+        appContext === "meeting" &&
+        msg.content === MEETING_ROOM_AI_DEMO_CREATE_INLINE_MARKER;
       const operationSourceLabel = resolveOperationSourceLabel(msg, index, arr, conversation.id);
       /** 任务侧全宽对话卡片：禁止与上一条合并头像区，否则连续卡片会套用 -mt 叠在一起 */
       const isTaskWideChatCard =
@@ -5175,6 +5748,9 @@ export function MainAIChatWindow({
         isOrgEmployeePermissionGuide0425Card ||
         isOrgSettingsPermission0425Card ||
         isOrganizationManagement0425Card ||
+        isMeetingRoomAiDemoMainCard ||
+        isMeetingRoomOneFViewListCard ||
+        isMeetingRoomOneFCreateCard ||
         isGenericCard ||
         isInvite0421OrgEmployeeOnboard ||
         isInvite0421EduStudentInviteFlow;
@@ -5219,7 +5795,10 @@ export function MainAIChatWindow({
         isSchedule0422AllList ||
         isPermissionEdit0424Card ||
         isPermissionDetail0424Card ||
-        isOrganizationManagement0425Card;
+        isOrganizationManagement0425Card ||
+        isMeetingRoomAiDemoMainCard ||
+        isMeetingRoomOneFViewListCard ||
+        isMeetingRoomOneFCreateCard;
       const showTimestamp = shouldShowTimestamp(msg, index > 0 ? arr[index - 1] : null)
       const isSameSender = index > 0 && arr[index - 1].senderId === msg.senderId;
       const isWithin10Seconds = index > 0 && 
@@ -6408,6 +6987,67 @@ export function MainAIChatWindow({
                 }
               })()}
             </TaskChatMessageRow>
+          ) : isMeetingRoomAiDemoMainCard ? (
+            <TaskChatMessageRow
+              hideAvatar={hideAvatar}
+              avatarSrc={conversation.user.avatar}
+              operationSourceLabel={operationSourceLabel}
+            >
+              <MeetingRoomAiDemoMainCard
+                messageId={msg.id}
+                scrollInPlaceMutatedCardToTop={() => scrollInPlaceMutatedCardToTop(msg.id)}
+                noTenant={
+                  currentOrg === NO_ORG_MESSAGE_SCOPE &&
+                  !(demoInstructionShell && organizationManagement0425Demo)
+                }
+                onDrawerEditRequest={(rec) => {
+                  setMeetingRoomDrawerScene({ type: "room", roomId: rec.id, phase: "edit" });
+                  setMeetingRoomCuiDrawerOpen(true);
+                }}
+                onDrawerRoomSettingsRequest={(rec) => {
+                  setMeetingRoomDrawerScene({ type: "room", roomId: rec.id, phase: "settings_form" });
+                  setMeetingRoomCuiDrawerOpen(true);
+                }}
+              />
+            </TaskChatMessageRow>
+          ) : isMeetingRoomOneFViewListCard ? (
+            <TaskChatMessageRow
+              hideAvatar={hideAvatar}
+              avatarSrc={conversation.user.avatar}
+              operationSourceLabel={operationSourceLabel}
+            >
+              <MeetingRoomViewListOneFCard
+                messageId={msg.id}
+                scrollInPlaceMutatedCardToTop={() => scrollInPlaceMutatedCardToTop(msg.id)}
+                onDrawerEditRequest={(rec) => {
+                  setMeetingRoomDrawerScene({ type: "room", roomId: rec.id, phase: "edit" });
+                  setMeetingRoomCuiDrawerOpen(true);
+                }}
+                onDrawerRoomSettingsRequest={(rec) => {
+                  setMeetingRoomDrawerScene({ type: "room", roomId: rec.id, phase: "settings_form" });
+                  setMeetingRoomCuiDrawerOpen(true);
+                }}
+              />
+            </TaskChatMessageRow>
+          ) : isMeetingRoomOneFCreateCard ? (
+            <TaskChatMessageRow
+              hideAvatar={hideAvatar}
+              avatarSrc={conversation.user.avatar}
+              operationSourceLabel={operationSourceLabel}
+            >
+              <MeetingRoomCreateOneFCard
+                defaultOrgLabel={meetingRoomDemoDefaultOrgLabel}
+                scrollInPlaceMutatedCardToTop={() => scrollInPlaceMutatedCardToTop(msg.id)}
+                onDrawerEditRequest={(rec) => {
+                  setMeetingRoomDrawerScene({ type: "room", roomId: rec.id, phase: "edit" });
+                  setMeetingRoomCuiDrawerOpen(true);
+                }}
+                onDrawerRoomSettingsRequest={(rec) => {
+                  setMeetingRoomDrawerScene({ type: "room", roomId: rec.id, phase: "settings_form" });
+                  setMeetingRoomCuiDrawerOpen(true);
+                }}
+              />
+            </TaskChatMessageRow>
           ) : isOrganizationManagement0425Card ? (
             (() => {
               const payload = parseOrganizationManagement0425MarkerPayload(msg.content);
@@ -7330,7 +7970,9 @@ export function MainAIChatWindow({
                       : activeApp === "todo"
                         ? "待办"
                         : activeApp === "meeting"
-                          ? "会议"
+                          ? meetingRoomCardStateDemo
+                            ? "会议室"
+                            : "会议"
                           : activeApp === "disk"
                             ? "微盘"
                             : activeApp === "docs"
@@ -7351,7 +7993,9 @@ export function MainAIChatWindow({
                       : activeApp === "todo"
                         ? "待办"
                         : activeApp === "meeting"
-                          ? "会议"
+                          ? meetingRoomCardStateDemo
+                            ? "会议室"
+                            : "会议"
                           : activeApp === "disk"
                             ? "微盘"
                             : activeApp === "docs"
@@ -7423,10 +8067,11 @@ export function MainAIChatWindow({
           (organizationManagement0425Demo && activeApp === "employee") ||
           (organizationManagement0425Demo && activeApp === "organization") ||
           (schedule0422DrawerDemo && activeApp === "schedule") ||
+          (meetingRoomCardStateDemo && activeApp === "meeting") ||
           (invite0421DockFlow &&
             !(hasOrganization || workbenchOrgGateReleased) &&
             (activeApp === "todo" ||
-              activeApp === "meeting" ||
+              (activeApp === "meeting" && !meetingRoomCardStateDemo) ||
               activeApp === "disk" ||
               activeApp === "docs" ||
               (activeApp === "schedule" && !schedule0422DrawerDemo)))
@@ -7444,7 +8089,8 @@ export function MainAIChatWindow({
           activeApp === "task" ||
           (schedule0422DrawerDemo && activeApp === "schedule") ||
           (organizationManagement0425Demo &&
-            (activeApp === "organization" || activeApp === "employee"))
+            (activeApp === "organization" || activeApp === "employee")) ||
+          (meetingRoomCardStateDemo && activeApp === "meeting")
         }
         onIndependentWindow={() => {
           if (activeApp && !floatingApps.includes(activeApp)) {
@@ -7490,7 +8136,6 @@ export function MainAIChatWindow({
           className="min-h-0 flex-1 overflow-y-auto overflow-x-clip scrollbar-hide pb-[var(--space-200)]"
           ref={chatContainerRef}
         >
-        
         {/* 待办卡片：0419 方案下主 AI 与「业务能力」子层均常驻，默认展开，可点底部中央收起；其它入口仍仅在主 AI 显示 */}
         {(is0419Explore || activeApp === null) && !schedule0422DrawerDemo && (
           <div
@@ -7580,6 +8225,11 @@ export function MainAIChatWindow({
           </div>
         )}
 
+        <HistoryPullLoadIndicator
+          status={historyPullStatus}
+          exposedHeight={historyPullExposedHeight}
+        />
+
         <div
           className={cn(
             "flex flex-col w-full px-[max(20px,var(--cui-padding-max))] pt-[var(--space-300)]",
@@ -7589,7 +8239,7 @@ export function MainAIChatWindow({
           )}
         >
           {/* Welcome Message (Mock/Static as per design) */}
-          {activeApp === null ? (
+          {activeApp === null && historyPullDemoActive ? null : activeApp === null ? (
             is0419Explore ? (
               explore0419WelcomeSection
             ) : invite0421DockFlow ? (
@@ -7866,10 +8516,55 @@ export function MainAIChatWindow({
                 </div>
               ) : null}
             </div>
+          ) : activeApp === "meeting" && meetingRoomCardStateDemo ? (
+            <div className="flex w-full flex-col gap-[var(--space-200)]">
+              <ChatWelcome
+                avatarSrc={conversation.user.avatar}
+                greeting="你好，我是你的会议室专属 AI 助手。主卡片为会议室列表；请用底部「会议室管理」打开规则、新建或查看抽屉（演示）。"
+              />
+              {meetingRoomCardStateMessages.length === 0 ? (
+                <div
+                  data-chat-slot-exclusion="true"
+                  className="flex flex-wrap gap-[var(--space-200)] w-full md:ml-[44px]"
+                >
+                  <ChatPromptButton
+                    type="button"
+                    onClick={() => {
+                      resetMeetingRoomDemoStore();
+                      beginNewUserChatRound("meeting");
+                      const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+                      const now = Date.now();
+                      setMeetingRoomCardStateMessages([
+                        {
+                          id: `meeting-room-demo-user-manual-${now}`,
+                          senderId: currentUser.id,
+                          content: MEETING_ROOM_AI_DEMO_USER_TRIGGER,
+                          timestamp: ts,
+                          createdAt: now,
+                        },
+                        {
+                          id: `meeting-room-demo-main-manual-${now}`,
+                          senderId: conversation.user.id,
+                          content: MEETING_ROOM_AI_DEMO_MAIN_MARKER,
+                          timestamp: ts,
+                          createdAt: now + 1,
+                          isAfterPrompt: true,
+                        },
+                      ]);
+                    }}
+                  >
+                    打开会议室列表
+                  </ChatPromptButton>
+                  <ChatPromptButton type="button" onClick={handleOrgClick}>
+                    切换组织
+                  </ChatPromptButton>
+                </div>
+              ) : null}
+            </div>
           ) : invite0421DockFlow &&
             !(hasOrganization || workbenchOrgGateReleased) &&
             (activeApp === "todo" ||
-              activeApp === "meeting" ||
+              (activeApp === "meeting" && !meetingRoomCardStateDemo) ||
               activeApp === "disk" ||
               activeApp === "docs" ||
               (activeApp === "schedule" && !schedule0422DrawerDemo)) ? (
@@ -7926,6 +8621,15 @@ export function MainAIChatWindow({
               {renderMessageList(
                 employeeMessages0425,
                 "employee",
+                undefined,
+                newRoundSlotWrapForActiveView
+              )}
+            </div>
+          ) : activeApp === "meeting" && meetingRoomCardStateDemo ? (
+            <div className="flex w-full flex-col gap-[var(--space-500)]">
+              {renderMessageList(
+                meetingRoomCardStateMessages,
+                "meeting",
                 undefined,
                 newRoundSlotWrapForActiveView
               )}
@@ -8028,6 +8732,8 @@ export function MainAIChatWindow({
                     <SecondaryAppButton
                       key={app.id}
                       app={app}
+                      iconPresentation="plain"
+                      hideMenuIcons
                       onMenuClick={(menu, appName, _appId, _menuItemId) => {
                         handleEducationDockShortcutMenuClick(menu, appName, _appId, app.imageSrc);
                       }}
@@ -8043,13 +8749,13 @@ export function MainAIChatWindow({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className="flex items-center gap-[var(--space-400)] flex-1 justify-start"
+                className="flex flex-1 min-w-0 justify-start gap-x-[var(--space-400)] gap-y-[var(--space-150)] items-center"
               >
                 <div className="flex shrink-0 items-center gap-[var(--space-200)]">
                   <button
                     type="button"
                     onClick={() => setActiveApp(null)}
-                    className="bg-bg flex gap-[var(--space-100)] h-[var(--space-800)] items-center px-[var(--space-300)] py-[var(--space-150)] rounded-full shrink-0 hover:bg-[var(--black-alpha-11)] transition-all duration-300 ease-out border border-border group"
+                    className="bg-bg flex shrink-0 gap-[var(--space-100)] h-[var(--space-800)] items-center px-[var(--space-300)] py-[var(--space-150)] rounded-full hover:bg-[var(--black-alpha-11)] transition-all duration-300 ease-out border border-border group"
                   >
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-text-secondary group-hover:text-text transition-colors">
                       <path d="M8.75 3.5L5.25 7L8.75 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -8066,11 +8772,13 @@ export function MainAIChatWindow({
                   />
                 </div>
 
-                <div className="flex min-w-0 flex-1 items-center gap-[var(--space-200)]">
+                <div className="flex min-w-0 flex-1 items-center gap-x-[var(--space-200)] gap-y-[var(--space-150)]">
                 {TASK_DOCK_SECONDARY_APPS.map((app) => (
                   <SecondaryAppButton
                     key={app.id}
                     app={app}
+                    iconPresentation="plain"
+                    hideMenuIcons
                     onMenuClick={(menu, appName, appId, _menuItemId) => {
                       beginNewUserChatRound("task");
                       const userMsg: Message = {
@@ -8207,6 +8915,8 @@ export function MainAIChatWindow({
                   <SecondaryAppButton
                     key={app.id}
                     app={app}
+                    iconPresentation="plain"
+                    hideMenuIcons
                     onMenuClick={(menu, appName, appId, menuItemId) => {
                       const useEmail0413CardSlot = taskEntryVariant === "email0413";
                       beginNewUserChatRound("mail");
@@ -8403,6 +9113,77 @@ export function MainAIChatWindow({
                 ))}
                 </div>
               </motion.div>
+            ) : activeApp === "meeting" && meetingRoomCardStateDemo ? (
+              <motion.div
+                key="meeting-room-demo-dock"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="flex flex-1 min-w-0 justify-start gap-x-[var(--space-400)] gap-y-[var(--space-150)] items-center"
+              >
+                <div className="flex shrink-0 items-center gap-[var(--space-200)]">
+                  <button
+                    type="button"
+                    onClick={() => setActiveApp(null)}
+                    className="bg-bg flex shrink-0 gap-[var(--space-100)] h-[var(--space-800)] items-center px-[var(--space-300)] py-[var(--space-150)] rounded-full hover:bg-[var(--black-alpha-11)] transition-all duration-300 ease-out border border-border group"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-text-secondary group-hover:text-text transition-colors">
+                      <path d="M8.75 3.5L5.25 7L8.75 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <p className="text-[length:var(--font-size-xs)] leading-none text-text-secondary group-hover:text-text whitespace-nowrap font-[var(--font-weight-medium)] transition-colors">
+                      返回
+                    </p>
+                  </button>
+                  <OrganizationSwitcherButton
+                    onClick={() => setIsAllAppsOpen(true)}
+                    isOpen={isAllAppsOpen}
+                    currentApp={switcherCurrentApp}
+                  />
+                </div>
+                <div className="flex min-w-0 flex-1 items-center gap-x-[var(--space-200)] gap-y-[var(--space-150)]">
+                <SecondaryAppButton
+                  app={MEETING_ROOM_CARD_STATE_DOCK_APP}
+                  iconPresentation="plain"
+                  hideMenuIcons
+                  onMenuClick={(_menu, _appName, _appId, menuItemId) => {
+                    const userLineById: Record<string, string> = {
+                      mr_view: "查看会议室",
+                      mr_create: "新建会议室",
+                    };
+                    const markerById: Record<string, string> = {
+                      mr_view: MEETING_ROOM_AI_DEMO_VIEW_LIST_MARKER,
+                      mr_create: MEETING_ROOM_AI_DEMO_CREATE_INLINE_MARKER,
+                    };
+                    if (!menuItemId) return;
+                    const userLine = userLineById[menuItemId];
+                    const marker = markerById[menuItemId];
+                    if (!userLine || !marker) return;
+                    beginNewUserChatRound("meeting");
+                    const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+                    const now = Date.now();
+                    setMeetingRoomCardStateMessages((prev) => [
+                      ...prev,
+                      {
+                        id: `mr-dock-user-${menuItemId}-${now}`,
+                        senderId: currentUser.id,
+                        content: userLine,
+                        timestamp: ts,
+                        createdAt: now,
+                      },
+                      {
+                        id: `mr-dock-bot-${menuItemId}-${now}`,
+                        senderId: conversation.user.id,
+                        content: marker,
+                        timestamp: ts,
+                        createdAt: now + 1,
+                        isAfterPrompt: true,
+                      },
+                    ]);
+                  }}
+                />
+                </div>
+              </motion.div>
             ) : invite0421NoOrgShellPersonalDock ? (
               <motion.div
                 key="invite0421-shell-personal-dock"
@@ -8437,7 +9218,7 @@ export function MainAIChatWindow({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className="flex min-w-0 flex-1 items-center justify-start gap-[var(--space-400)]"
+                className="flex flex-1 min-w-0 justify-start gap-x-[var(--space-400)] gap-y-[var(--space-150)] items-center"
               >
                 <div className="flex shrink-0 items-center gap-[var(--space-200)]">
                   <button
@@ -8459,11 +9240,13 @@ export function MainAIChatWindow({
                     currentApp={switcherCurrentApp}
                   />
                 </div>
-                <div className="flex min-w-0 flex-1 items-center gap-[var(--space-200)]">
+                <div className="flex min-w-0 flex-1 items-center gap-x-[var(--space-200)] gap-y-[var(--space-150)]">
                 {ORGANIZATION_0425_APPS.map((app) => (
                   <SecondaryAppButton
                     key={app.id}
                     app={app}
+                    iconPresentation="plain"
+                    hideMenuIcons
                     onMenuClick={(_menu, appName, appId) => {
                       if (appId === "org_management") {
                         appendOrganizationManagement0425Card("organization");
@@ -8486,7 +9269,7 @@ export function MainAIChatWindow({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className="flex min-w-0 flex-1 items-center justify-start gap-[var(--space-400)]"
+                className="flex flex-1 min-w-0 justify-start gap-x-[var(--space-400)] gap-y-[var(--space-150)] items-center"
               >
                 <div className="flex shrink-0 items-center gap-[var(--space-200)]">
                   <button
@@ -8508,11 +9291,13 @@ export function MainAIChatWindow({
                     currentApp={switcherCurrentApp}
                   />
                 </div>
-                <div className="flex min-w-0 flex-1 items-center gap-[var(--space-200)]">
+                <div className="flex min-w-0 flex-1 items-center gap-x-[var(--space-200)] gap-y-[var(--space-150)]">
                 {EMPLOYEE_0425_APPS.map((app) => (
                   <SecondaryAppButton
                     key={app.id}
                     app={app}
+                    iconPresentation="plain"
+                    hideMenuIcons
                     onMenuClick={(menu, appName, appId) => {
                       if (menu === "__direct__" && appId === "emp_permission_apply") {
                         appendEmployeePermissionGuide0425Card("employee");
@@ -8531,7 +9316,7 @@ export function MainAIChatWindow({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className="flex min-w-0 flex-1 items-center justify-start gap-[var(--space-400)]"
+                className="flex flex-1 min-w-0 justify-start gap-x-[var(--space-400)] gap-y-[var(--space-150)] items-center"
               >
                 <div className="flex shrink-0 items-center gap-[var(--space-200)]">
                   <button
@@ -8875,6 +9660,8 @@ export function MainAIChatWindow({
                             <SecondaryAppButton
                               key={app.id}
                               app={app}
+                              iconPresentation="plain"
+                              hideMenuIcons
                               onMenuClick={(menu, appName, _appId, _menuItemId) => {
                                 handleEducationDockShortcutMenuClick(menu, appName, _appId, app.imageSrc, () =>
                                   scrollPanelToBottom(floatingChatScrollRef.current),
@@ -8919,6 +9706,15 @@ export function MainAIChatWindow({
             setSchedule0422Items((prev) => prev.map((x) => (x.id === it.id ? it : x)));
             setSchedule0422DrawerItem(it);
           }}
+        />
+      ) : null}
+      {meetingRoomCardStateDemo ? (
+        <MeetingRoomCuiDrawer
+          open={meetingRoomCuiDrawerOpen}
+          onOpenChange={setMeetingRoomCuiDrawerOpen}
+          scene={meetingRoomDrawerScene}
+          onSceneChange={setMeetingRoomDrawerScene}
+          defaultOrgLabel={meetingRoomDemoDefaultOrgLabel}
         />
       ) : null}
       </div>

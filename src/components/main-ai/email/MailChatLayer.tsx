@@ -6,6 +6,7 @@ import type { Conversation, Message, MessageOperationSource } from "../../chat/d
 import { currentUser } from "../../chat/data";
 import { AssistantChatBubble } from "../../chat/ChatWelcome";
 import { ChatPromptButton } from "../../chat/ChatPromptButton";
+import { NewRoundSlotShell } from "../../chat/NewRoundSlotShell";
 import { TaskChatMessageRow } from "../TaskChatMessageRow";
 import { MailMailboxListCard } from "./MailCuiCards";
 import { ReceivedNewMailCard } from "./ReceivedNewMailCard";
@@ -83,6 +84,7 @@ export function MailChatLayer({
   mailAdminOrganizations = [],
   onPickTenantForMailAdmin,
   mailReadInChat = false,
+  newRoundSlotWrapConfig = null,
 }: {
   messages: Message[];
   conversation: Conversation;
@@ -100,6 +102,14 @@ export function MailChatLayer({
   ) => void;
   /** 0417：列表点信在会话内推读信卡片，不打开右侧抽屉 */
   mailReadInChat?: boolean;
+  newRoundSlotWrapConfig?: {
+    startMessageIndex: number;
+    slotHeightPx: number;
+    onOverflow: () => void;
+    shellRef: React.RefObject<HTMLDivElement | null>;
+    messageGapClassName: string;
+    revealChildrenAfterMs?: number;
+  } | null;
 }) {
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [selected, setSelected] = React.useState<(typeof DEMO_MAILS)[0] | null>(null);
@@ -298,7 +308,8 @@ export function MailChatLayer({
     <MailSignatureDemoStateProvider>
       <>
       <div className="flex flex-col gap-[var(--space-625)] w-full">
-        {messages.map((msg, index, arr) => {
+        {(() => {
+          const messageElements = messages.map((msg, index, arr) => {
           const isLastRow = index === arr.length - 1;
           const lastRowRefCallback =
             lastMessageRowRef && isLastRow
@@ -929,7 +940,26 @@ export function MailChatLayer({
               </div>
             </OperationSourceNavContext.Provider>
           );
-        })}
+          });
+
+          if (!newRoundSlotWrapConfig) return messageElements;
+          if (newRoundSlotWrapConfig.startMessageIndex >= messageElements.length) return messageElements;
+          const head = messageElements.slice(0, newRoundSlotWrapConfig.startMessageIndex);
+          const tail = messageElements.slice(newRoundSlotWrapConfig.startMessageIndex);
+          return [
+            ...head,
+            <NewRoundSlotShell
+              key="mail-new-round-conversation-slot"
+              heightPx={newRoundSlotWrapConfig.slotHeightPx}
+              messageGapClassName={newRoundSlotWrapConfig.messageGapClassName}
+              shellRef={newRoundSlotWrapConfig.shellRef}
+              onContentExceedsSlot={newRoundSlotWrapConfig.onOverflow}
+              revealChildrenAfterMs={newRoundSlotWrapConfig.revealChildrenAfterMs ?? 0}
+            >
+              {tail}
+            </NewRoundSlotShell>,
+          ];
+        })()}
       </div>
       {!mailReadInChat ? (
         <EmailReadDrawer
