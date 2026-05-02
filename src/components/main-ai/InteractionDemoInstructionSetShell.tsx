@@ -13,12 +13,16 @@ type DemoScenario = {
   logicMarkdown: string
   devPromptMarkdown: string
   hideDevPrompt?: boolean
+  /** 为 true 时不出现在左侧演示导航（数据保留，便于日后恢复） */
+  hidden?: boolean
 }
 
 type DemoCategory = {
   id: string
   title: string
   demos: readonly DemoScenario[]
+  /** 为 true 时整组不出现在左侧演示导航（数据保留，便于日后恢复） */
+  hidden?: boolean
 }
 
 type DetailSection = {
@@ -73,6 +77,7 @@ const DEMO_INSTRUCTION_CATEGORIES: readonly DemoCategory[] = [
   {
     id: "view-history-records",
     title: "查看历史记录",
+    hidden: true,
     demos: [
       {
         id: "pull-history-load",
@@ -141,6 +146,43 @@ const DEMO_INSTRUCTION_CATEGORIES: readonly DemoCategory[] = [
     ],
   },
 ]
+
+/** 左侧导航实际展示的演示分类（已过滤 `hidden`） */
+export const VISIBLE_DEMO_INSTRUCTION_CATEGORIES: readonly DemoCategory[] =
+  DEMO_INSTRUCTION_CATEGORIES.filter((c) => !c.hidden)
+    .map((c) => ({ ...c, demos: c.demos.filter((d) => !d.hidden) }))
+    .filter((c) => c.demos.length > 0)
+
+/**
+ * 当前被隐藏的演示入口（整组 `category.hidden` 或单条 `demo.hidden`）。
+ * 需要恢复时在 `DEMO_INSTRUCTION_CATEGORIES` 里去掉对应 `hidden` 即可。
+ */
+export function listHiddenDemoInstructionOutlineEntries(): ReadonlyArray<{
+  categoryId: string
+  categoryTitle: string
+  hiddenDemos: ReadonlyArray<{ id: string; title: string }>
+}> {
+  const out: Array<{
+    categoryId: string
+    categoryTitle: string
+    hiddenDemos: ReadonlyArray<{ id: string; title: string }>
+  }> = []
+  for (const c of DEMO_INSTRUCTION_CATEGORIES) {
+    if (c.hidden) {
+      out.push({
+        categoryId: c.id,
+        categoryTitle: c.title,
+        hiddenDemos: c.demos.map((d) => ({ id: d.id, title: d.title })),
+      })
+      continue
+    }
+    const hiddenDemos = c.demos.filter((d) => d.hidden).map((d) => ({ id: d.id, title: d.title }))
+    if (hiddenDemos.length) {
+      out.push({ categoryId: c.id, categoryTitle: c.title, hiddenDemos })
+    }
+  }
+  return out
+}
 
 const LEFT_DEFAULT_WIDTH_PX = 260
 const RIGHT_DEFAULT_WIDTH_PX = 360
@@ -246,7 +288,7 @@ export function InteractionDemoInstructionSetShell(props: {
 }) {
   const { children, onCommand } = props
   const [selectedId, setSelectedId] = React.useState(
-    DEMO_INSTRUCTION_CATEGORIES[0]?.demos[0]?.id ?? "",
+    VISIBLE_DEMO_INSTRUCTION_CATEGORIES[0]?.demos[0]?.id ?? "",
   )
   const [leftWidthPx, setLeftWidthPx] = React.useState(LEFT_DEFAULT_WIDTH_PX)
   const [rightWidthPx, setRightWidthPx] = React.useState(RIGHT_DEFAULT_WIDTH_PX)
@@ -256,11 +298,11 @@ export function InteractionDemoInstructionSetShell(props: {
   const detailSectionRefs = React.useRef<Record<string, HTMLElement | null>>({})
 
   const selected = React.useMemo(() => {
-    for (const category of DEMO_INSTRUCTION_CATEGORIES) {
+    for (const category of VISIBLE_DEMO_INSTRUCTION_CATEGORIES) {
       const hit = category.demos.find((demo) => demo.id === selectedId)
       if (hit) return hit
     }
-    return DEMO_INSTRUCTION_CATEGORIES[0]?.demos[0] ?? null
+    return VISIBLE_DEMO_INSTRUCTION_CATEGORIES[0]?.demos[0] ?? null
   }, [selectedId])
 
   const detailSections = React.useMemo<DetailSection[]>(
@@ -343,7 +385,7 @@ export function InteractionDemoInstructionSetShell(props: {
         style={{ width: leftWidthPx }}
         aria-label="交互演示指令集·演示入口"
       >
-        {DEMO_INSTRUCTION_CATEGORIES.map((category) => (
+        {VISIBLE_DEMO_INSTRUCTION_CATEGORIES.map((category) => (
           <div key={category.id} className="min-w-0">
             <div
               style={{ paddingLeft: DOC_ZONE_PAD_X, height: OUTLINE_HIT_H, minHeight: OUTLINE_HIT_H }}
